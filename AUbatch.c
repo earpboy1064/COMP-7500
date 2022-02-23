@@ -7,7 +7,7 @@
 
 /*########## start of functions ##########*/
 //1
-void scheduing_module(struct scheduling_policy policy;struct workload_info workload;struct job_info_queue job_info;)
+void scheduing_module(struct scheduling_policy policy, struct workload_info workload, struct job_info_queue job_info)
 {};
 
 //2
@@ -35,7 +35,7 @@ void automated_performance_evaluation(){};
 //d1
 struct job_info_queue
 {
-    string job_name;
+    char job_name[100];
     int argv;  // this might be the time to run
     double estimated_cpu_time;
     int priority;
@@ -51,6 +51,7 @@ struct job_info_queue
 //d2
 struct help_info
 {
+    char command[100];
 };
 
 
@@ -80,7 +81,7 @@ struct workload_info
 //d5 
 struct scheduling_policy
 {
-    enum = {FCFS, SJF, PRIORITY};
+    enum polices {FCFS, SJF, PRIORITY};
 };
 
 
@@ -90,7 +91,7 @@ int main( int argc, char *argv[])
 {
 struct job_info_queue job_queue;
 job_queue.priority = 2; 
-
+printf(job_queue.priority);
 
 
 }
@@ -100,13 +101,13 @@ job_queue.priority = 2;
 
 /*########## start of functions ##########*/
 //1
-void scheduing_module(struct scheduling_policy policy; struct workload_info workload; struct job_info_queue job_info;)
+void scheduing_module(struct scheduling_policy *policy, struct workload_info workload, struct job_info_queue job_info)
 {
 
 if (policy == FCFS){};
 
 
-if (policy == SFJ){};
+if (policy == SJF){};
 
 
 if (policy == PRIORITY){};
@@ -118,7 +119,7 @@ if (policy == PRIORITY){};
 
 
 };
-
+/*
 //2
 void dispatching_module(){};
 
@@ -140,4 +141,6 @@ void performance_measurements(){};
 
 //7 
 void automated_performance_evaluation(){};
+
+*/
 /*########## End of functions ##########*/
