@@ -4,7 +4,7 @@
 #include <string.h>
 
 // struct prototypes 
-
+// git commit
 /*########## start of functions ##########*/
 //1
 void scheduing_module(struct scheduling_policy policy, struct workload_info workload, struct job_info_queue job_info)
