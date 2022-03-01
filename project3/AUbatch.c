@@ -6,39 +6,6 @@
 // struct prototypes 
 
 
-/*
-This is a test to see if the git push works  hello
-testing pull
-testing push
-
-*/
-
-
-/*########## start of functions ##########*/
-//1
-void scheduing_module(struct scheduling_policy *policy, struct workload_info *workload, struct job_info_queue *job_info){};
-
-//2
-void dispatching_module(){};
-
-//3
-void commandline_parser(){};
-
-//4 
-void display_job_queue(){};
-
-//5
-void help(){};
-
-//6
-void performance_measurements(){};
-
-//7 
-void automated_performance_evaluation(){};
-/*########## End of functions ##########*/
-
-
-/*########## Data structures ##########*/
 
 //d1
 struct job_info_queue
@@ -52,8 +19,6 @@ struct job_info_queue
     int wait;
 
     // can add arrival_time if needed
-
-
 };
 
 //d2
@@ -89,8 +54,36 @@ struct workload_info
 //d5 
 struct scheduling_policy
 {
-    enum polices {FCFS, SJF, PRIORITY};
+    //enum polices {FCFS, SJF, PRIORITY};
 };
+
+
+
+/*########## start of functions ##########*/
+//1
+void scheduing_module(struct scheduling_policy policy, struct workload_info workload, struct job_info_queue job_info);
+
+//2
+void dispatching_module();
+
+//3
+void commandline_parser();
+
+//4 
+void display_job_queue();
+
+//5
+void help();
+
+//6
+void performance_measurements();
+
+//7 
+void automated_performance_evaluation();
+/*########## End of functions ##########*/
+
+
+/*########## Data structures ##########*/
 
 
 
@@ -101,7 +94,7 @@ struct job_info_queue job_queue;
 job_queue.priority = 2; 
 printf("%d",job_queue.priority);
 
-printf("testing git");
+printf("\ntesting git\n\n");
 return 0;
 }
 
@@ -110,17 +103,17 @@ return 0;
 
 /*########## start of functions ##########*/
 //1
-/*
-void scheduing_module(struct scheduling_policy *policy, struct workload_info workload, struct job_info_queue job_info)
+
+void scheduing_module(struct scheduling_policy policy, struct workload_info workload, struct job_info_queue job_info)
 {
 
-if (policy == FCFS){};
+//if (policy == FCFS){};
 
 
-if (policy == SJF){};
+//if (policy == SJF){};
 
 
-if (policy == PRIORITY){};
+//if (policy == PRIORITY){};
 
 
 // we create the queue here ^
@@ -128,7 +121,7 @@ if (policy == PRIORITY){};
 // we then send the queue to the job_information_queue here v
 
 
-};
+}
 
 //2
 void dispatching_module(){};
@@ -141,16 +134,16 @@ void display_job_queue()
 {
 // just printing the job queue and information
 
-};
+}
 
 //5
-void help(){};
+void help(){}
 
 //6
-void performance_measurements(){};
+void performance_measurements(){}
 
 //7 
-void automated_performance_evaluation(){};
+void automated_performance_evaluation(){}
 
-*/
+
 /*########## End of functions ##########*/
