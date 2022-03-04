@@ -102,13 +102,6 @@ void automated_performance_evaluation();
 
 
 
-// practice function can be removed
-void *myThreadFun(void *vargp)
-{
-    sleep(1);
-    printf("Printing GeeksQuiz from Thread \n");
-    return NULL;
-}
 
 pthread_mutex_t queue_lock;
 pthread_cond_t  buf_not_full;
@@ -183,7 +176,7 @@ void scheduing_module(struct scheduling_policy policy, struct workload_info work
 //2
 void dispatching_module(){}; 
 
-void *executor(void *ptr) // exampel of a dispatching module
+void *executor(void *ptr) // example of a dispatching module
 {
     char *message;
     u_int i;
