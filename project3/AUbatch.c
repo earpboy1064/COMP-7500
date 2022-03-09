@@ -29,13 +29,13 @@ typedef unsigned int u_int;
 void *commandline( void *ptr ); /* To simulate job submissions and scheduling */
 void *executor( void *ptr );    /* To simulate job execution */
 pthread_mutex_t cmd_queue_lock;  /* Lock for critical sections */
-pthread_cond_t cmd_buf_not_full; /* Condition variable for buf_not_full */
-pthread_cond_t cmd_buf_not_empty; /* Condition variable for buf_not_empty */
+pthread_cond_t queue_not_full; /* Condition variable for buf_not_full */
+pthread_cond_t queue_not_empty; /* Condition variable for buf_not_empty */
 /* Global shared variables */
 u_int buf_head;
 u_int buf_tail;
 u_int count;
-char *cmd_buffer[CMD_BUF_SIZE];
+char *queue[CMD_BUF_SIZE];
 
 //################
 
@@ -130,6 +130,10 @@ void performance_measurements();
 
 //7 
 void automated_performance_evaluation();
+
+
+
+void bubble_sort();
 /*########## End of functions ##########*/
 
 
@@ -144,7 +148,7 @@ u_int buf_head;  // u_int used to prevent negative numbers
 u_int buf_tail;
 u_int count;
 
-char *cmd_buffer[CMD_BUF_SIZE];
+char *queue[CMD_BUF_SIZE];
 
 
 
@@ -168,8 +172,8 @@ int main( int argc, char *argv[])
    
     /* Initialize the lock the two condition variables */
     pthread_mutex_init(&cmd_queue_lock, NULL);
-    pthread_cond_init(&cmd_buf_not_full, NULL);
-    pthread_cond_init(&cmd_buf_not_empty, NULL);
+    pthread_cond_init(&queue_not_full, NULL);
+    pthread_cond_init(&queue_not_empty, NULL);
      
     /* Wait till threads are complete before main continues. Unless we  */
     /* wait we run the risk of executing an exit which will terminate   */
@@ -190,6 +194,54 @@ return 0;
 
 /*########## start of functions ##########*/
 //1
+
+
+void bubblesort()
+{
+
+        
+       // Sorting using bubble sort
+        int i = 0;
+        int j = 0;
+        double job_one, job_two;
+        for (i = 0; i < n - 1; i++)
+        {
+            for (j = 0; j < n-i-1; j++)
+            {
+                if (policy == SJF)
+                {
+                    job_one = queue[j]->est_cpu_time;
+                    job_two =  queue[j+1]->est_cpu_time;  
+                }
+
+                else if(policy == PRIORITY) // job assignments swapped to sort in reverse order
+                {
+                    job_two = queue[j]->priority;
+                    job_one =  queue[j+1]->priority;
+                }
+
+                if(job_one > job_two)
+                {
+                    //swap elements
+                    struct job_info *temp;
+                    temp = queue[j];
+                    queue[j] = queue[j+1];
+                    queue[j+1] = temp;
+                }
+            }  
+         }
+    
+
+
+}
+
+
+
+
+
+
+
+
 
 void scheduing_module(struct scheduling_policy policy, struct workload_info workload, struct job_info_queue job_info)
 {
@@ -222,26 +274,26 @@ char *message;
         pthread_mutex_lock(&cmd_queue_lock);
         printf("In executor: count = %d\n", count);
         while (count == 0) {
-            pthread_cond_wait(&cmd_buf_not_empty, &cmd_queue_lock);
+            pthread_cond_wait(&queue_not_empty, &cmd_queue_lock);
         }
         /* Run the command scheduled in the queue */
         count--;
-        printf("In executor: cmd_buffer[%d] = %s\n", buf_tail, 
-cmd_buffer[buf_tail]); 
+        printf("In executor: queue[%d] = %s\n", buf_tail, 
+queue[buf_tail]); 
         
         /* 
          * Note: system() function is a simple example.
          * You should use execv() rather than system() here.
          */
-        system(cmd_buffer[buf_tail]); 
+        system(queue[buf_tail]); 
         /* Free the dynamically allocated memory for the buffer */
-        free(cmd_buffer[buf_tail]);
+        free(queue[buf_tail]);
      
         /* Move buf_tail forward, this is a circular queue */ 
         buf_tail++;
         if (buf_tail == CMD_BUF_SIZE)
             buf_tail = 0;
-        pthread_cond_signal(&cmd_buf_not_full);
+        pthread_cond_signal(&queue_not_full);
         /* Unlok the shared command queue */
         pthread_mutex_unlock(&cmd_queue_lock);
     } /* end for */
@@ -260,20 +312,20 @@ void *executor(void *ptr) // example of a dispatching module
         pthread_mutex_lock(&cmd_queue_lock);
         printf("In executor: count = %d\n", count);
         while (count == 0) {
-            pthread_cond_wait(&cmd_buf_not_empty, &cmd_queue_lock);
+            pthread_cond_wait(&queue_not_empty, &cmd_queue_lock);
         }
         /* Run the command scheduled in the queue */
         count--;
-        printf("In executor: cmd_buffer[%d] = %s\n", buf_tail, 
-cmd_buffer[buf_tail]); 
+        printf("In executor: queue[%d] = %s\n", buf_tail, 
+queue[buf_tail]); 
         
         /* 
          * Note: system() function is a simple example.
          * You should use execv() rather than system() here.
          */
-        system(cmd_buffer[buf_tail]); 
+        system(queue[buf_tail]); 
         /* Free the dynamically allocated memory for the buffer */
-        free(cmd_buffer[buf_tail]);
+        free(queue[buf_tail]);
 #ifdef LOW_SERVICE_RATE
         sleep(2); /* Simulate service time of 2 seconds */
 #endif
@@ -282,7 +334,7 @@ cmd_buffer[buf_tail]);
         buf_tail++;
         if (buf_tail == CMD_BUF_SIZE)
             buf_tail = 0;
-        pthread_cond_signal(&cmd_buf_not_full);
+        pthread_cond_signal(&queue_not_full);
         /* Unlok the shared command queue */
         pthread_mutex_unlock(&cmd_queue_lock);
     } /* end for */
@@ -315,7 +367,7 @@ char *message;
         //printf("In commandline: count = %d\n", count);
         printf("In commandline_parser");
         while (count == CMD_BUF_SIZE) {
-            pthread_cond_wait(&cmd_buf_not_full, &cmd_queue_lock);
+            pthread_cond_wait(&queue_not_full, &cmd_queue_lock);
         }
         /* Dynamically create a buffer slot to hold a commandline */
 
@@ -328,10 +380,10 @@ char *message;
         temp_cmd = malloc(MAX_CMD_LEN*sizeof(char));
         getline(&temp_cmd, &command_size, stdin);  
         pthread_mutex_lock(&cmd_queue_lock);    
-        cmd_buffer[buf_head]= temp_cmd; 
+        queue[buf_head]= temp_cmd; 
         
-        printf("In commandline: cmd_buffer[%d] = %s\n", buf_head, 
-cmd_buffer[buf_head]);  
+        printf("In commandline: queue[%d] = %s\n", buf_head, 
+queue[buf_head]);  
     
         count++;
  
@@ -339,7 +391,7 @@ cmd_buffer[buf_head]);
         buf_head++;
         if (buf_head == CMD_BUF_SIZE)
             buf_head = 0;
-        pthread_cond_signal(&cmd_buf_not_empty);  
+        pthread_cond_signal(&queue_not_empty);  
         /* Unlok the shared command queue */
         /* Simulate a low arrival rate */
         pthread_mutex_unlock(&cmd_queue_lock);
@@ -367,14 +419,14 @@ void *commandline(void *ptr) // example of commandline_parser
  
         printf("In commandline: count = %d\n", count);
         while (count == CMD_BUF_SIZE) {
-            pthread_cond_wait(&cmd_buf_not_full, &cmd_queue_lock);
+            pthread_cond_wait(&queue_not_full, &cmd_queue_lock);
         }
         /* Dynamically create a buffer slot to hold a commandline */
 #ifdef STATIC_COMMAND
-        cmd_buffer[buf_head] = malloc(strlen("process -help -time ") + 1);
-        strcpy(cmd_buffer[buf_head], "./process -help -time "); 
+        queue[buf_head] = malloc(strlen("process -help -time ") + 1);
+        strcpy(queue[buf_head], "./process -help -time "); 
         sprintf(num_str, "%d", i);
-        strcat(cmd_buffer[buf_head], num_str);
+        strcat(queue[buf_head], num_str);
 #else
         pthread_mutex_unlock(&cmd_queue_lock);
         printf("Please submit a batch processing job:\n");
@@ -382,11 +434,11 @@ void *commandline(void *ptr) // example of commandline_parser
         temp_cmd = malloc(MAX_CMD_LEN*sizeof(char));
         getline(&temp_cmd, &command_size, stdin);  
         pthread_mutex_lock(&cmd_queue_lock);    
-        cmd_buffer[buf_head]= temp_cmd; 
+        queue[buf_head]= temp_cmd; 
         
 #endif
-        printf("In commandline: cmd_buffer[%d] = %s\n", buf_head, 
-cmd_buffer[buf_head]);  
+        printf("In commandline: queue[%d] = %s\n", buf_head, 
+queue[buf_head]);  
     
         count++;
  
@@ -394,7 +446,7 @@ cmd_buffer[buf_head]);
         buf_head++;
         if (buf_head == CMD_BUF_SIZE)
             buf_head = 0;
-        pthread_cond_signal(&cmd_buf_not_empty);  
+        pthread_cond_signal(&queue_not_empty);  
         /* Unlok the shared command queue */
         pthread_mutex_unlock(&cmd_queue_lock);
         /* Simulate a low arrival rate */
