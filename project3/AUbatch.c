@@ -128,7 +128,7 @@ void scheduing_module(struct scheduling_policy policy, struct workload_info work
 void *dispatching_module(void *ptr); // job execution
 
 //3
-void *commandline_parser(void *ptr); // scheduling and submission
+void *scheduing_module(void *ptr); // scheduling and submission
 
 //4 
 void display_job_queue();
@@ -172,7 +172,7 @@ int main( int argc, char *argv[])
    // iret1 = pthread_create(&command_thread, NULL, commandline, (void*) message1);
    // iret2 = pthread_create(&executor_thread, NULL, executor, (void*) message2);
     printf("\n\nwe compiled correctly!!\n\n");
-    iret1 = pthread_create(&command_thread, NULL, commandline_parser, (void*) message1);
+    iret1 = pthread_create(&command_thread, NULL, scheduing_module, (void*) message1);
     iret2 = pthread_create(&executor_thread, NULL, dispatching_module, (void*) message2);
    
     /* Initialize the lock the two condition variables */
@@ -257,7 +257,7 @@ void scheduing_module(struct scheduling_policy policy, struct workload_info work
 
 
 // Currently being called my thread !!!!!!
-void *commandline_parser(void *ptr)
+void *scheduing_module(void *ptr) // we need to accept jobs from commandline parser
 {
     char *message;
     char *temp_cmd;
@@ -291,7 +291,12 @@ void *commandline_parser(void *ptr)
         // collects command
         temp_cmd = malloc(MAX_CMD_LEN*sizeof(char));
         getline(&temp_cmd, &command_size, stdin);  
+        int size = strlen(temp_cmd);
 
+        // removes the '\n' from getline input 
+        // stackoverflow suggestion: shorturl.at/bhDEG
+        if (temp_cmd[size - 1] == '\n') temp_cmd[--size] = 0;
+ 
         pthread_mutex_lock(&cmd_queue_lock);  
         printf("\n********COMMAND_P locked 3********\n");
         printf("\ntemp_cmd is %s\n", temp_cmd);
@@ -353,9 +358,44 @@ char *message;
        
         printf("\nhere is the submitted job: %s\n", queue[0]->name);
 
+       
+
         char temp[100];
-        strcpy(temp, queue[0]->name); // converting char* to char[] for system
-        spawn(temp); // run job in first position
+        strcpy(temp, queue[0]->name); // converting char* to char[] for execv
+
+        char *my_args[5];
+        pid_t pid; // holds pid of child
+  
+        my_args[0] = "process";
+        my_args[1] = "1";
+        my_args[2] = "2";
+        my_args[3] = NULL;
+  
+        puts("fork()ing");
+  
+        char  test[100] = "processLong";
+        switch ((pid = fork()))
+        {
+            case -1:
+                /* Fork() has failed */
+                perror("fork");
+                break;
+            case 0:
+                /* This is processed by the child */
+                execv(temp, NULL);               
+                puts("Uh oh! If this prints, execv() must have failed");
+                exit(EXIT_FAILURE);
+                break;
+            default:
+                /* This is processed by the parent */
+                puts ("This is a message from the parent");
+                break;
+        }
+  
+        //system(temp); // run job in first position
+                      // works great but program has to wait defeates the purpose 
+
+
         count--;
         printf("Job is running...\n");
         /* Free the dynamically allocated memory for the buffer */
