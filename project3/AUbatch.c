@@ -4,11 +4,9 @@
 #include <string.h>
 #include <unistd.h> 
 #include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <pthread.h>
-#include <string.h>
 #include <sys/types.h>
+#include "tokenizer.h"
+
 
 //############  From Aubatch_simple.c
 typedef unsigned int u_int; 
@@ -299,6 +297,12 @@ void *scheduing_module(void *ptr) // we need to accept jobs from commandline par
  
         pthread_mutex_lock(&cmd_queue_lock);  
         printf("\n********COMMAND_P locked 3********\n");
+
+        char [] str = {"quit"};
+        int reslt;
+        reslt = cmd_dispatch(str);
+
+
         printf("\ntemp_cmd is %s\n", temp_cmd);
 
         struct job_info job_input;
