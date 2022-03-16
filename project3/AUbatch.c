@@ -55,7 +55,7 @@ u_int policy = FCFS;
 #
 #
 # How to compile: 
-# gcc AUbatch.c -o Aubatch -lpthread
+# gcc AUbatch.c -o AUbatch -lpthread
 #
 #
 #
@@ -120,7 +120,7 @@ struct scheduling_policy
 
 /*########## start of functions ##########*/
 //1
-void scheduing_module(struct scheduling_policy policy, struct workload_info workload, struct job_info_queue job_info);
+//void scheduing_module(struct scheduling_policy policy, struct workload_info workload, struct job_info_queue job_info);
 
 //2
 void *dispatching_module(void *ptr); // job execution
@@ -144,6 +144,25 @@ void automated_performance_evaluation();
 
 void bubble_sort();
 /*########## End of functions ##########*/
+
+/*
+static struct {
+	const char *name;
+	int (*func)(int nargs, char **args);
+} cmdtable[] = {
+	/* commands: single command must end with \n 
+	// stripped the \n from them add back if needed
+	{ "?",	print_help_menu },
+	{ "h",	print_help_menu },
+	{ "help",	print_help_menu },
+	{ "r",		cmd_run },
+	{ "run",	cmd_run },
+	{ "q",	cmd_quit },
+	{ "quit",	cmd_quit },
+         {NULL, NULL}    /* Please add more operations below. 
+};
+
+*/
 
 
 
@@ -173,6 +192,8 @@ int main( int argc, char *argv[])
     iret1 = pthread_create(&command_thread, NULL, scheduing_module, (void*) message1);
     iret2 = pthread_create(&executor_thread, NULL, dispatching_module, (void*) message2);
    
+
+
     /* Initialize the lock the two condition variables */
     pthread_mutex_init(&cmd_queue_lock, NULL);
     pthread_cond_init(&queue_not_full, NULL);
@@ -291,32 +312,85 @@ void *scheduing_module(void *ptr) // we need to accept jobs from commandline par
         getline(&temp_cmd, &command_size, stdin);  
         int size = strlen(temp_cmd);
 
+        pthread_mutex_lock(&cmd_queue_lock);  
+        printf("\n********COMMAND_P locked 3********\n");
+
+
+/* ####################################################### */
+
         // removes the '\n' from getline input 
         // stackoverflow suggestion: shorturl.at/bhDEG
         if (temp_cmd[size - 1] == '\n') temp_cmd[--size] = 0;
  
-        pthread_mutex_lock(&cmd_queue_lock);  
-        printf("\n********COMMAND_P locked 3********\n");
 
-        char [] str = {"quit"};
-        int reslt;
-        reslt = cmd_dispatch(str);
+        //char arr[] = {"test"};
+       // char str[] = {"quit\n 1 2 3"};
+        int total_arguments = 0;
+        char *args[5];
+        int result;
+
+        // breaks command up and puts the parts in args
+        // sends temp command to be processed
+        total_arguments = cmd_dispatch(temp_cmd,args);
 
 
-        printf("\ntemp_cmd is %s\n", temp_cmd);
+        // checks command 
+        if ((*args[1] == '?') || (*args[1] == 'h') || (*args[1] == 'help'))
+        {
+            print_help_menu();
+        }
 
+
+        /*   Needs to collect new input after displaying the help   */
+
+
+        printf("total_arguments: %d", total_arguments);
+
+        //printf("\ntemp_cmd is %s\n", temp_cmd);
+
+
+        // holds the job to be put into the queue.
         struct job_info job_input;
+        
 
-        snprintf(job_input.name, sizeof(job_input.name), "%s", temp_cmd);
-        //shorturl.at/mxzQ6  Stack overflow reference
+        // Switch to build job based on input parameters
+        int i = 0;
+        while (i < total_arguments) 
+        {
+        
+            switch( i ){
+                case 0:
+                    snprintf(job_input.name, sizeof(job_input.name), "%s", args[1]);
+                    //shorturl.at/mxzQ6  Stack overflow reference
+                     break;
+                case 1:
+                    job_input.priority = atoi(args[2]);
+                    break;
+            }
+            i++;
+        }
+
+/*
+1. check to make sure all of the required data is provided before sending the job.
+2. the job needs to be removed from the queue after its done ( this may already be happening?)
+3. create benchmark function 
+4. create menu
+5. create print job queue function 
+
+*/
 
         printf("\nJob_input.name is: %s\n", job_input.name);
+        printf("\nJob_input.priority is: %d\n", job_input.priority);
+
         queue[count] = &job_input; 
         printf("job added");
         count++;
         //bubble_sort();
-        //printf("In commandline: queue[%d] = %s\n", count, queue[count]);  
-    
+        //printf("In commandline: queue[%d] = %s\n", count, queue[count]); 
+
+
+    /* ####################################################### */
+
 
         pthread_cond_signal(&queue_not_empty);  
         /* Unlok the shared command queue */
@@ -361,6 +435,7 @@ char *message;
 
        
         printf("\nhere is the submitted job: %s\n", queue[0]->name);
+        printf("\nhere is the submitted job priority: %d\n", queue[0]->priority);
 
        
 

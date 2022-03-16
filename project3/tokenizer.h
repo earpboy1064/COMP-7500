@@ -43,9 +43,9 @@ static const char *helpmenu[] = {
 
 void print_help_menu()
 {
-printf("\nrun] <job> <time> <priority>\n
-		[quit] Exit AUbatch\n
-		[help] Print help menu\n");
+printf("\n[run] <job> <time> <priority>");
+printf("\n[quit] Exit AUbatch");
+printf("\n[help] Print help menu\n");
 
 }
 
@@ -60,28 +60,40 @@ int cmd_run(int nargs, char **args) {
       	return 0; /* if succeed */
 }
 
-int cmd_quit()
+void cmd_quit()
 {
 
   printf("please quit");
 }
+
+// Replaced with print_help_menue
 int cmd_helpmenu(int n, char **a) {
 	(void)n;
 	(void)a;
 	showmenu("AUbatch help menu", helpmenu);
 	return 0;
 }
-/* Command table. */
+
+/*
+// Tables is like the key for the inputs.
 static struct {
 	const char *name;
 	int (*func)(int nargs, char **args);
-} 
+} cmdtable[] = {
+	/* commands: single command must end with \n 
+	// stripped the \n from them add back if needed
+	{ "?",	print_help_menu },
+	{ "h",	print_help_menu },
+	{ "help",	print_help_menu },
+	{ "r",		cmd_run },
+	{ "run",	cmd_run },
+	{ "q",	cmd_quit },
+	{ "quit",	cmd_quit },
+         {NULL, NULL}    /* Please add more operations below. 
+};
+*/
 
-
-
-
-
-int cmd_dispatch(char *cmd) {
+int cmd_dispatch(char *cmd, char* temp[]) {
 	time_t beforesecs, aftersecs, secs;
 	u_int32_t beforensecs, afternsecs, nsecs;
 	char *args[MAXMENUARGS];
@@ -99,23 +111,26 @@ int cmd_dispatch(char *cmd) {
 			return E2BIG;
 		}
 		args[nargs++] = word;
+		temp[nargs] = word;
 	}
 
 	if (nargs==0) {
 		return 0;
 	}
 
-	for (i=0; cmdtable[i].name; i++) {
-		if (*cmdtable[i].name && !strcmp(args[0], cmdtable[i].name)) {
-			assert(cmdtable[i].func!=NULL);
+	//for (i=0; cmdtable[i].name; i++) {
+	//	if (*cmdtable[i].name && !strcmp(args[0], cmdtable[i].name)) {
+	///		assert(cmdtable[i].func!=NULL);
             
-            		result = cmdtable[i].func(nargs, args);
-			return result;
-		}
-	}
+       //     		result = cmdtable[i].func(nargs, args);
+			//return result;
+		//	return nargs--;
+	//	}
+//	}
 
-	printf("%s: Command not found\n", args[0]);
-	return EINVAL;
+	//printf("%s: Command not found\n", args[0]);
+	return (nargs);
+	//return EINVAL;
 }
 
 
