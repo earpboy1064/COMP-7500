@@ -7,91 +7,22 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <assert.h>
+# define MAXMENUARGS 7
 
-# define MAXMENUARGS 5
 
 
-/* Display menu information */
-void showmenu(const char *name, const char *x[]) {
-	int ct, half, i;
-
-	printf("\n");
-	printf("%s\n", name);
-	
-	for (i=ct=0; x[i]; i++) {
-		ct++;
-	}
-	half = (ct+1)/2;
-
-	for (i=0; i<half; i++) {
-		printf("    %-36s", x[i]);
-		if (i+half < ct) {
-			printf("%s", x[i+half]);
-		}
-		printf("\n");
-	}
-
-	printf("\n");
-}
-
-static const char *helpmenu[] = {
-	"[run] <job> <time> <priority>       ",
-	"[quit] Exit AUbatch                 ",
-	"[help] Print help menu              ",
-      	NULL     /* Please add more menu options below */
-};
-
-void print_help_menu()
+struct job_info      //maybe move this to a different file.
 {
-printf("\n[run] <job> <time> <priority>");
-printf("\n[quit] Exit AUbatch");
-printf("\n[help] Print help menu\n");
+    int argv;  // this might be the time to run
+    double est_cpu_time;
+    int priority;
+    double start_time;
+    double finish_time;
+    int wait;
+    char* name[100];
 
-}
-
-int cmd_run(int nargs, char **args) {
-	if (nargs != 4) {
-		printf("Usage: run <job> <time> <priority>\n");
-		return EINVAL;
-	}
-        
-        /* Use execv to run the submitted job in AUbatch */
-        printf("use execv to run the job in AUbatch.\n");
-      	return 0; /* if succeed */
-}
-
-void cmd_quit()
-{
-
-  printf("please quit");
-}
-
-// Replaced with print_help_menue
-int cmd_helpmenu(int n, char **a) {
-	(void)n;
-	(void)a;
-	showmenu("AUbatch help menu", helpmenu);
-	return 0;
-}
-
-/*
-// Tables is like the key for the inputs.
-static struct {
-	const char *name;
-	int (*func)(int nargs, char **args);
-} cmdtable[] = {
-	/* commands: single command must end with \n 
-	// stripped the \n from them add back if needed
-	{ "?",	print_help_menu },
-	{ "h",	print_help_menu },
-	{ "help",	print_help_menu },
-	{ "r",		cmd_run },
-	{ "run",	cmd_run },
-	{ "q",	cmd_quit },
-	{ "quit",	cmd_quit },
-         {NULL, NULL}    /* Please add more operations below. 
+    // can add arrival_time if needed
 };
-*/
 
 int cmd_dispatch(char *cmd, char* temp[]) {
 	time_t beforesecs, aftersecs, secs;
@@ -110,64 +41,57 @@ int cmd_dispatch(char *cmd, char* temp[]) {
 			printf("Command line has too many words\n");
 			return E2BIG;
 		}
-		args[nargs++] = word;
+		args[nargs] = word;
 		temp[nargs] = word;
+		nargs++;
 	}
 
 	if (nargs==0) {
 		return 0;
 	}
-
-	//for (i=0; cmdtable[i].name; i++) {
-	//	if (*cmdtable[i].name && !strcmp(args[0], cmdtable[i].name)) {
-	///		assert(cmdtable[i].func!=NULL);
-            
-       //     		result = cmdtable[i].func(nargs, args);
-			//return result;
-		//	return nargs--;
-	//	}
-//	}
-
-	//printf("%s: Command not found\n", args[0]);
+	
 	return (nargs);
-	//return EINVAL;
 }
 
+int cmd_check(char *args[], struct job_info *queue[])
+{
+	
+ if (strcmp(args[0], "help") == 0){
+            print_help_menu();}
+
+        else if (strcmp(args[0], "h") == 0){
+            print_help_menu();}
+
+        else if (strcmp(args[0], "?") == 0){
+            print_help_menu();}
+    
+        else if(strcmp(args[0], "list") == 0){
+            printf("list\n");
+		    printf("\nhere is the submitted job: %s\n", queue[0]->name); // works but gives error if no jobs
+		}
 
 
-/*
-// Loops for the length of the string counting spaces
-  for (i = 0; i < strlen(str) + 1; i++)	
-  {
+        else if(strcmp(args[0], "fcfs") == 0){
+            printf("fcfs\n");}
 
-    if (isspace(c))
-    {
-      // If the last char read was a char and not a space
-      if (last_was_char == 1) 
-      {
-      // It will add a word to the total and reset last_was_char
-        word_count = word_count + 1;
-        last_was_char = 0;
-        arg_counter++;
-        if (arg_counter == 1)
-        {
-         //strcat(name, temp);
+        else if(strcmp(args[0], "sjf") == 0){
+            printf("sjf\n");}
+
+        else if(strcmp(args[0], "priority") == 0){ //This works Bitch
+            printf("****priority****\n");}
+
+        else if(strcmp(args[0], "test") == 0){
+            printf("test\n");
         }
-      } 
-    }
-    else
-    {
-      last_was_char = 1;
-      printf("char: %c\n", c);
-     // my_args[arg_counter] = c
-      temp[i] = c;
-      temp[i+1] = '\0';
-    }
-    c = str[i];
-  }
-  printf("\nstring count: %d\n", word_count);
-  printf("\nstring temp: %s\n", temp);
-  printf("\nname: %s\n", name);
 
+        else if((strcmp(args[0], "quit") == 0)){
+            printf("quit\n");
+            return 1;  // sets flag to signal end of use.
+        }
+        else
+        {
+            printf("command Not recognized\n");
+        }
+return 0;
 }
-*/
+

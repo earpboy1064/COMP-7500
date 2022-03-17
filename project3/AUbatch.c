@@ -6,7 +6,7 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include "tokenizer.h"
-
+#include "menues.h"
 
 //############  From Aubatch_simple.c
 typedef unsigned int u_int; 
@@ -42,6 +42,7 @@ u_int buf_head;
 u_int buf_tail;
 u_int count;
 u_int policy = FCFS;
+int terminate = 0; //-FLAG
 
 
 
@@ -65,18 +66,7 @@ u_int policy = FCFS;
 
 /*########## Data structures Start ##########*/
 //d1
-struct job_info
-{
-    int argv;  // this might be the time to run
-    double est_cpu_time;
-    int priority;
-    double start_time;
-    double finish_time;
-    int wait;
-    char* name[100];
 
-    // can add arrival_time if needed
-};
 
 //d2
 struct help_info
@@ -176,6 +166,8 @@ struct job_info *queue[];
 
 int main( int argc, char *argv[])
 {
+
+    print_menu();
 /* FROM aubtach_sample.c Written by Xiao Qin*/ 
     pthread_t command_thread, executor_thread; /* Two concurrent threads */
     char *message1 = "Command Thread";
@@ -209,7 +201,7 @@ int main( int argc, char *argv[])
 /*End of aubatch_sample*/
 
 
-
+printf("\n\nThank you for using AUbatch\n\n");
 return 0;
 }
 
@@ -283,17 +275,19 @@ void *scheduing_module(void *ptr) // we need to accept jobs from commandline par
     u_int i;
     char num_str[8];
     size_t command_size;
-     
+    char *args[5];
+
+
     message = (char *) ptr;
     printf("%s \n", message);
     /* Enter multiple commands in the queue to be scheduled */
 
 
-    for (i = 0; i < NUM_OF_CMD; i++) { 
-
+    //for (i = 0; i < NUM_OF_CMD; i++) { 
+    while (terminate == 0){
         /* lock the shared command queue */
         pthread_mutex_lock(&cmd_queue_lock);
-        printf("\n********COMMAND_P locked 1********\n");
+     //   printf("\n********COMMAND_P locked 1********\n");
         //printf("In commandline: count = %d\n", count);
         printf("In commandline_parser\n");
         while (count == CMD_BUF_SIZE) {
@@ -302,7 +296,7 @@ void *scheduing_module(void *ptr) // we need to accept jobs from commandline par
         /* Dynamically create a buffer slot to hold a commandline */
 
         pthread_mutex_unlock(&cmd_queue_lock); // UNLOCK
-        printf("\n********COMMAND_P UNLOCKED 2********\n");
+   //     printf("\n********COMMAND_P UNLOCKED 2********\n");
         printf("Please submit a batch processing job:\n");
         printf(">"); 
 
@@ -313,7 +307,7 @@ void *scheduing_module(void *ptr) // we need to accept jobs from commandline par
         int size = strlen(temp_cmd);
 
         pthread_mutex_lock(&cmd_queue_lock);  
-        printf("\n********COMMAND_P locked 3********\n");
+//        printf("\n********COMMAND_P locked 3********\n");
 
 
 /* ####################################################### */
@@ -326,21 +320,15 @@ void *scheduing_module(void *ptr) // we need to accept jobs from commandline par
         //char arr[] = {"test"};
        // char str[] = {"quit\n 1 2 3"};
         int total_arguments = 0;
-        char *args[5];
         int result;
+        int run_true = 0;
+
 
         // breaks command up and puts the parts in args
         // sends temp command to be processed
         total_arguments = cmd_dispatch(temp_cmd,args);
 
-
-        // checks command 
-        if ((*args[1] == '?') || (*args[1] == 'h') || (*args[1] == 'help'))
-        {
-            print_help_menu();
-        }
-
-
+        terminate = cmd_check(args, queue);
         /*   Needs to collect new input after displaying the help   */
 
 
@@ -353,22 +341,28 @@ void *scheduing_module(void *ptr) // we need to accept jobs from commandline par
         struct job_info job_input;
         
 
+
+        // structure of command <command> <job name> <time?> <priority?> 
+
         // Switch to build job based on input parameters
         int i = 0;
+
+    if (strcmp(args[0], "r") == 0){
         while (i < total_arguments) 
         {
         
             switch( i ){
-                case 0:
+                case 1:
                     snprintf(job_input.name, sizeof(job_input.name), "%s", args[1]);
                     //shorturl.at/mxzQ6  Stack overflow reference
                      break;
-                case 1:
+                case 2:
                     job_input.priority = atoi(args[2]);
                     break;
             }
             i++;
         }
+    
 
 /*
 1. check to make sure all of the required data is provided before sending the job.
@@ -387,16 +381,18 @@ void *scheduing_module(void *ptr) // we need to accept jobs from commandline par
         count++;
         //bubble_sort();
         //printf("In commandline: queue[%d] = %s\n", count, queue[count]); 
-
+    
 
     /* ####################################################### */
 
 
         pthread_cond_signal(&queue_not_empty);  
+    }
+        if (terminate == 1 ){        pthread_cond_signal(&queue_not_empty); }
         /* Unlok the shared command queue */
         /* Simulate a low arrival rate */
         pthread_mutex_unlock(&cmd_queue_lock);
-        printf("\n********COMMAND_P UNLOCKED 4********\n");
+     //   printf("\n********COMMAND_P UNLOCKED 4********\n");
 
 
 
@@ -414,16 +410,23 @@ char *message;
     u_int i;
     message = (char *) ptr;
     //printf("%s \n", message);
-    for (i = 0; i < NUM_OF_CMD; i++) {
+   // for (i = 0; i < NUM_OF_CMD; i++) {
+    while(terminate == 0){
         /* lock and unlock for the shared process queue */
         pthread_mutex_lock(&cmd_queue_lock);
-        printf("\n********DISPATCH_MOD LOCKED********\n");
+     //   printf("\n********DISPATCH_MOD LOCKED********\n");
 
-        printf("In dispatch: count = %d\n", count);
-        while (count == 0) {
-            printf("\ndispatch waiting\n");
+    //    printf("In dispatch: count = %d\n", count);
+        while ((count == 0) && (terminate ==0)) {
+            //printf("\ndispatch waiting\n");
             pthread_cond_wait(&queue_not_empty, &cmd_queue_lock);
         }
+
+        if (terminate ==1)// checks if terminate changed while in pthread_cond wait
+        break;
+
+
+
         /* Run the command scheduled in the queue */
         //count--;
         //printf("In executor: queue[%d] = %s\n", buf_tail, queue[buf_tail]); 
@@ -434,25 +437,19 @@ char *message;
          */
 
        
-        printf("\nhere is the submitted job: %s\n", queue[0]->name);
-        printf("\nhere is the submitted job priority: %d\n", queue[0]->priority);
+     //   printf("\nhere is the submitted job: %s\n", queue[0]->name);
+     //   printf("\nhere is the submitted job priority: %d\n", queue[0]->priority);
 
        
 
         char temp[100];
         strcpy(temp, queue[0]->name); // converting char* to char[] for execv
 
-        char *my_args[5];
         pid_t pid; // holds pid of child
   
-        my_args[0] = "process";
-        my_args[1] = "1";
-        my_args[2] = "2";
-        my_args[3] = NULL;
+        
+        //puts("fork()ing");
   
-        puts("fork()ing");
-  
-        char  test[100] = "processLong";
         switch ((pid = fork()))
         {
             case -1:
@@ -467,7 +464,7 @@ char *message;
                 break;
             default:
                 /* This is processed by the parent */
-                puts ("This is a message from the parent");
+             //   puts ("This is a message from the parent");
                 break;
         }
   
@@ -476,7 +473,7 @@ char *message;
 
 
         count--;
-        printf("Job is running...\n");
+      //  printf("Job is running...\n");
         /* Free the dynamically allocated memory for the buffer */
         //free(queue[buf_tail]);
      
@@ -484,7 +481,7 @@ char *message;
         pthread_cond_signal(&queue_not_full);
         /* Unlok the shared command queue */
         pthread_mutex_unlock(&cmd_queue_lock);
-        printf("\n********DISPATCH_MOD UNLOCKED********\n");
+     //   printf("\n********DISPATCH_MOD UNLOCKED********\n");
 
     } /* end for */
 
