@@ -5,6 +5,7 @@
 #include <unistd.h> 
 #include <pthread.h>
 #include <sys/types.h>
+#include <signal.h>
 #include "tokenizer.h"
 #include "menues.h"
 
@@ -289,7 +290,7 @@ void *scheduing_module(void *ptr) // we need to accept jobs from commandline par
         pthread_mutex_lock(&cmd_queue_lock);
      //   printf("\n********COMMAND_P locked 1********\n");
         //printf("In commandline: count = %d\n", count);
-        printf("In commandline_parser\n");
+       // printf("In commandline_parser\n");
         while (count == CMD_BUF_SIZE) {
             pthread_cond_wait(&queue_not_full, &cmd_queue_lock);
         }
@@ -328,11 +329,11 @@ void *scheduing_module(void *ptr) // we need to accept jobs from commandline par
         // sends temp command to be processed
         total_arguments = cmd_dispatch(temp_cmd,args);
 
-        terminate = cmd_check(args, queue);
+        terminate = cmd_check(args, queue, count);
         /*   Needs to collect new input after displaying the help   */
 
 
-        printf("total_arguments: %d", total_arguments);
+        //printf("total_arguments: %d", total_arguments);
 
         //printf("\ntemp_cmd is %s\n", temp_cmd);
 
@@ -373,11 +374,11 @@ void *scheduing_module(void *ptr) // we need to accept jobs from commandline par
 
 */
 
-        printf("\nJob_input.name is: %s\n", job_input.name);
-        printf("\nJob_input.priority is: %d\n", job_input.priority);
+       // printf("\nJob_input.name is: %s\n", job_input.name);
+       // printf("\nJob_input.priority is: %d\n", job_input.priority);
 
         queue[count] = &job_input; 
-        printf("job added");
+       // printf("job added");
         count++;
         //bubble_sort();
         //printf("In commandline: queue[%d] = %s\n", count, queue[count]); 
@@ -401,6 +402,10 @@ void *scheduing_module(void *ptr) // we need to accept jobs from commandline par
 }
 
 
+
+void handler(sig) {
+printf("exev done");
+}
 
 
 //2
@@ -447,9 +452,9 @@ char *message;
 
         pid_t pid; // holds pid of child
   
-        
+        signal(SIGCHLD,handler); // handler to catch sigchld to tell when execv is finished.
+
         //puts("fork()ing");
-  
         switch ((pid = fork()))
         {
             case -1:
@@ -458,6 +463,7 @@ char *message;
                 break;
             case 0:
                 /* This is processed by the child */
+                
                 execv(temp, NULL);               
                 puts("Uh oh! If this prints, execv() must have failed");
                 exit(EXIT_FAILURE);
@@ -467,12 +473,20 @@ char *message;
              //   puts ("This is a message from the parent");
                 break;
         }
-  
+        int w, status;
+        w = waitpid(pid, &status, WNOHANG ); // this doesnt hang but only catches it after the next process starts.
+
+        //https://stackoverflow.com/questions/42840950/waitpid-and-fork-execs-non-blocking-advantage-over-a-syscall
+        //https://stackoverflow.com/questions/43487950/how-to-handle-signals-when-process-is-waiting-in-waitpid
+        
         //system(temp); // run job in first position
                       // works great but program has to wait defeates the purpose 
 
 
-        count--;
+        count--; //remove when useing others.
+
+
+
       //  printf("Job is running...\n");
         /* Free the dynamically allocated memory for the buffer */
         //free(queue[buf_tail]);

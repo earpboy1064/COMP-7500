@@ -53,7 +53,7 @@ int cmd_dispatch(char *cmd, char* temp[]) {
 	return (nargs);
 }
 
-int cmd_check(char *args[], struct job_info *queue[])
+int cmd_check(char *args[], struct job_info *queue[], int size_of_queue)
 {
 	
  if (strcmp(args[0], "help") == 0){
@@ -66,8 +66,12 @@ int cmd_check(char *args[], struct job_info *queue[])
             print_help_menu();}
     
         else if(strcmp(args[0], "list") == 0){
-            printf("list\n");
-		    printf("\nhere is the submitted job: %s\n", queue[0]->name); // works but gives error if no jobs
+            printf("list size of Queue: %d\n", size_of_queue);
+            int i =0; 
+            for(i = 0; i < size_of_queue; i++)
+            {
+		    printf("\nhere is job: %d - %s\n",i, queue[i]->name); // works but gives error if no jobs
+            }
 		}
 
 

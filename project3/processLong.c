@@ -25,7 +25,7 @@ int main(int argc, char *argv[] )
     
   }
 
-  sleep(10);
+  sleep(100);
   printf("process Done\n");
    return 0;
 }
