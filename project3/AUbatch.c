@@ -86,13 +86,15 @@ struct job_info      //maybe move this to a different file.
     int wait;
     double arrival_time;
     char* name[100];
+    char progress[5];
 
     // can add arrival_time if needed
 };
 
 
 struct job_info queue[CMD_BUF_SIZE];
-
+struct job_info completed_job_queue[1000];
+int completed_counter = 0;
 
 
 
@@ -139,17 +141,7 @@ int cmd_check(char *args[] /*, struct job_info *queue[]*/, int size_of_queue)
             print_help_menu();}
     
         else if(strcmp(args[0], "list") == 0){
-            printf("list size of Queue: %d\n", count);
-            int i =0; 
-            
-          int temp_tail = buf_tail;
-            for( i = 0; i < count; i++)
-            {
-                 if (temp_tail == CMD_BUF_SIZE){ temp_tail = 0; }
-
-		    printf("\nhere is job: %d - %s\n",i, queue[temp_tail].name);
-            temp_tail++; // works but gives error if no jobs
-            }
+            display_job_queue();
         }
 
         else if(strcmp(args[0], "fcfs") == 0){
@@ -276,24 +268,6 @@ void automated_performance_evaluation();
 void bubble_sort();
 /*########## End of functions ##########*/
 
-/*
-static struct {
-	const char *name;
-	int (*func)(int nargs, char **args);
-} cmdtable[] = {
-	/* commands: single command must end with \n 
-	// stripped the \n from them add back if needed
-	{ "?",	print_help_menu },
-	{ "h",	print_help_menu },
-	{ "help",	print_help_menu },
-	{ "r",		cmd_run },
-	{ "run",	cmd_run },
-	{ "q",	cmd_quit },
-	{ "quit",	cmd_quit },
-         {NULL, NULL}    /* Please add more operations below. 
-};
-
-*/
 
 
 
@@ -580,7 +554,8 @@ void scheduing_module(struct job_info job_input) // we need to accept jobs from 
 
 
 void handler(sig) {
-//printf("\nexev done");
+completed_job_queue[completed_counter] = queue[buf_tail];
+completed_counter++;
 }
 
 
@@ -614,6 +589,7 @@ char *message;
         char temp[100];
         //strcpy(temp, queue[0]->name); // converting char* to char[] for execv
         strcpy(temp, queue[buf_tail].name);
+        strcpy(queue[buf_tail].progress,"Run");
         pid_t pid; // holds pid of child
   
         signal(SIGCHLD,handler); // handler to catch sigchld to tell when execv is finished.
@@ -633,7 +609,6 @@ char *message;
         my_args[0] = arg_convert;
         my_args[1] = NULL;
 
-        
         //puts("fork()ing");
         switch ((pid = fork()))
         {
@@ -692,15 +667,50 @@ char *message;
 }; 
 
 
-/*
+
 
 //4 
 void display_job_queue()
 {
-// just printing the job queue and information
+    int i =0; 
+            
+    int temp_tail = buf_tail;
 
+
+   
+
+    printf("\nTotal number of jobs in the queue: %d",count);
+            printf("\nScheduling Policy:");
+            switch(policy)
+            {
+                case (1):
+                    printf("FCFS.\n");
+                    break;
+                case(2):
+                    printf("SJF.\n");
+                    break;
+                case(3):
+                    printf("PRIORIY\n");
+                    break;
+            } 
+
+
+    printf("Name     CPU_Time    Pri    Arrival_time    Progress \n");
+    for( i = 0; i < count; i++)
+    {
+        if (temp_tail == CMD_BUF_SIZE){ temp_tail = 0; }
+
+		    
+                
+            printf("%s      ",queue[temp_tail].name);
+            printf("%.1f     ",queue[temp_tail].est_cpu_time);
+            printf("%d      ",queue[temp_tail].priority);  
+            printf("%.1f    ", queue[temp_tail].arrival_time);   
+            printf("    %s\n", queue[temp_tail].progress );       
+            temp_tail++; // works but gives error if no jobs
+        }
 }
-
+/*
 //5
 void help(){}
 
@@ -730,7 +740,16 @@ void automated_performance_evaluation(/*struct job_info *queue[]*/)
     test_batch[3].arrival_time = 0.4;
     test_batch[4].arrival_time = 0.8;
     
-    test_batch[0].est_cpu_time = 3;
+    test_batch[0].priority = 1;
+    test_batch[1].priority = 4;
+    test_batch[2].priority = 2;
+    test_batch[3].priority = 3;
+    test_batch[4].priority = 5;
+
+
+
+
+    test_batch[0].est_cpu_time = 10;
     test_batch[1].est_cpu_time = 1;
     test_batch[2].est_cpu_time = 6;
     test_batch[3].est_cpu_time = 1;
