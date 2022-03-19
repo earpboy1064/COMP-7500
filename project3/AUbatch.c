@@ -6,8 +6,9 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <signal.h>
-#include "tokenizer.h"
+//#include "tokenizer.h"
 #include "menues.h"
+# define MAXMENUARGS 7
 
 //############  From Aubatch_simple.c
 typedef unsigned int u_int; 
@@ -18,14 +19,29 @@ typedef unsigned int u_int;
  * When comment out the following macro, job are submitted by users.
  */
 //#define STATIC_COMMAND 
-#define CMD_BUF_SIZE 100 /* The size of the command queueu */
-#define NUM_OF_CMD   5  /* The number of submitted jobs   */
+#define CMD_BUF_SIZE 10 /* The size of the command queue */
+#define NUM_OF_CMD   8  /* The number of submitted jobs   */
 #define MAX_CMD_LEN  512 /* The longest commandline length */
 
 
 #define FCFS  1
 #define SJF  2
 #define PRIORITY  3
+
+//struct job_info *queue[];
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -48,6 +64,128 @@ int terminate = 0; //-FLAG
 
 
 
+
+
+
+
+
+
+
+
+# define MAXMENUARGS 7
+
+
+
+struct job_info      //maybe move this to a different file.
+{
+    double exec_time;  // this might be the time to run
+    double est_cpu_time;
+    int priority;
+    double start_time;
+    double finish_time;
+    int wait;
+    double arrival_time;
+    char* name[100];
+
+    // can add arrival_time if needed
+};
+
+
+struct job_info queue[CMD_BUF_SIZE];
+
+
+
+
+
+int cmd_dispatch(char *cmd, char* temp[]) {
+	time_t beforesecs, aftersecs, secs;
+	u_int32_t beforensecs, afternsecs, nsecs;
+	char *args[MAXMENUARGS];
+	int nargs=0;
+	char *word;
+	char *context;
+ 	int i, result;
+
+	for (word = strtok_r(cmd, " ", &context);
+	     word != NULL;
+	     word = strtok_r(NULL, " ", &context)) {
+
+		if (nargs >= MAXMENUARGS) {
+			printf("Command line has too many words\n");
+			return E2BIG;
+		}
+		args[nargs] = word;
+		temp[nargs] = word;
+		nargs++;
+	}
+
+	if (nargs==0) {
+		return 0;
+	}
+	
+	return (nargs);
+}
+
+int cmd_check(char *args[] /*, struct job_info *queue[]*/, int size_of_queue)
+{
+	
+ if (strcmp(args[0], "help") == 0){
+            print_help_menu();}
+
+        else if (strcmp(args[0], "h") == 0){
+            print_help_menu();}
+
+        else if (strcmp(args[0], "?") == 0){
+            print_help_menu();}
+    
+        else if(strcmp(args[0], "list") == 0){
+            printf("list size of Queue: %d\n", count);
+            int i =0; 
+            
+          int temp_tail = buf_tail;
+            for( i = 0; i < count; i++)
+            {
+                 if (temp_tail == CMD_BUF_SIZE){ temp_tail = 0; }
+
+		    printf("\nhere is job: %d - %s\n",i, queue[temp_tail].name);
+            temp_tail++; // works but gives error if no jobs
+            }
+        }
+
+        else if(strcmp(args[0], "fcfs") == 0){
+            printf("fcfs\n");}
+
+        else if(strcmp(args[0], "sjf") == 0){
+            printf("sjf\n");}
+
+        else if(strcmp(args[0], "priority") == 0){ //This works Bitch
+            printf("****priority****\n");}
+
+        else if(strcmp(args[0], "test") == 0){
+            //temp
+            automated_performance_evaluation(queue);
+            int i =0;
+            for( i = 0; i < 5; i++)
+   
+            printf("test\n");
+        }
+
+        else if((strcmp(args[0], "quit") == 0)){
+            printf("quit\n");
+            return 1;  // sets flag to signal end of use.
+        }
+
+        else if((strcmp(args[0], "r") == 0)){}
+
+        else
+        {
+            printf("command Not recognized\n");
+        }
+return 0;
+}
+
+
+
 //################
 
 /* COMMENT BLOCK 
@@ -57,7 +195,7 @@ int terminate = 0; //-FLAG
 #
 #
 # How to compile: 
-# gcc AUbatch.c -o AUbatch -lpthread
+# gcc -g -w AUbatch.c -o AUbatch -lpthread
 #
 #
 #
@@ -113,11 +251,13 @@ struct scheduling_policy
 //1
 //void scheduing_module(struct scheduling_policy policy, struct workload_info workload, struct job_info_queue job_info);
 
+void commandline_parser();
+
 //2
 void *dispatching_module(void *ptr); // job execution
 
 //3
-void *scheduing_module(void *ptr); // scheduling and submission
+void scheduing_module(struct job_info job_input); // scheduling and submission
 
 //4 
 void display_job_queue();
@@ -160,13 +300,28 @@ static struct {
 
 
 
-//char *queue[CMD_BUF_SIZE];
-struct job_info *queue[];
+
+//struct job_info *queue[];   actual queue to be used
+
+
+
+//snprintf(job_one.name, sizeof(job_one.name), "%s", "process");
+
+//job_one.name() = "process";
+
+//struct job_info queue[50];
+
 
 
 
 int main( int argc, char *argv[])
 {
+   
+
+
+
+
+
 
     print_menu();
 /* FROM aubtach_sample.c Written by Xiao Qin*/ 
@@ -182,7 +337,8 @@ int main( int argc, char *argv[])
    // iret1 = pthread_create(&command_thread, NULL, commandline, (void*) message1);
    // iret2 = pthread_create(&executor_thread, NULL, executor, (void*) message2);
     printf("\n\nwe compiled correctly!!\n\n");
-    iret1 = pthread_create(&command_thread, NULL, scheduing_module, (void*) message1);
+    //iret1 = pthread_create(&command_thread, NULL, scheduing_module, (void*) message1);
+    iret1 = pthread_create(&command_thread, NULL, commandline_parser,NULL);
     iret2 = pthread_create(&executor_thread, NULL, dispatching_module, (void*) message2);
    
 
@@ -227,23 +383,23 @@ void bubble_sort()
             {
                 if (policy == SJF)
                 {
-                    job_one = queue[j]->est_cpu_time;
-                    job_two =  queue[j+1]->est_cpu_time;  
+                    job_one = queue[j].est_cpu_time;
+                    job_two =  queue[j+1].est_cpu_time;  
                 }
 
                 else if(policy == PRIORITY) // job assignments swapped to sort in reverse order
                 {
-                    job_two = queue[j]->priority;
-                    job_one =  queue[j+1]->priority;
+                    job_two = queue[j].priority;
+                    job_one =  queue[j+1].priority;
                 }
 
                 if(job_one > job_two)
                 {
                     //swap elements
                     struct job_info *temp;
-                    temp = queue[j];
+                    temp = &queue[j];
                     queue[j] = queue[j+1];
-                    queue[j+1] = temp;
+                    queue[j+1] = *temp;
                 }
             }  
          }
@@ -266,12 +422,8 @@ void scheduing_module(struct scheduling_policy policy, struct workload_info work
 }
 */
 
-
-
-// Currently being called my thread !!!!!!
-void *scheduing_module(void *ptr) // we need to accept jobs from commandline parser
+void commandline_parser()
 {
-    char *message;
     char *temp_cmd;
     u_int i;
     char num_str[8];
@@ -279,11 +431,7 @@ void *scheduing_module(void *ptr) // we need to accept jobs from commandline par
     char *args[5];
 
 
-    message = (char *) ptr;
-    printf("%s \n", message);
     /* Enter multiple commands in the queue to be scheduled */
-
-
     //for (i = 0; i < NUM_OF_CMD; i++) { 
     while (terminate == 0){
         /* lock the shared command queue */
@@ -318,18 +466,16 @@ void *scheduing_module(void *ptr) // we need to accept jobs from commandline par
         if (temp_cmd[size - 1] == '\n') temp_cmd[--size] = 0;
  
 
-        //char arr[] = {"test"};
-       // char str[] = {"quit\n 1 2 3"};
+       
         int total_arguments = 0;
-        int result;
-        int run_true = 0;
+        
 
 
         // breaks command up and puts the parts in args
         // sends temp command to be processed
         total_arguments = cmd_dispatch(temp_cmd,args);
 
-        terminate = cmd_check(args, queue, count);
+        terminate = cmd_check(args, /*queue,*/ count);
         /*   Needs to collect new input after displaying the help   */
 
 
@@ -364,21 +510,9 @@ void *scheduing_module(void *ptr) // we need to accept jobs from commandline par
             i++;
         }
     
+        scheduing_module(job_input);
 
-/*
-1. check to make sure all of the required data is provided before sending the job.
-2. the job needs to be removed from the queue after its done ( this may already be happening?)
-3. create benchmark function 
-4. create menu
-5. create print job queue function 
-
-*/
-
-       // printf("\nJob_input.name is: %s\n", job_input.name);
-       // printf("\nJob_input.priority is: %d\n", job_input.priority);
-
-        queue[count] = &job_input; 
-       // printf("job added");
+       // queue[count] = &job_input; 
         count++;
         //bubble_sort();
         //printf("In commandline: queue[%d] = %s\n", count, queue[count]); 
@@ -387,8 +521,13 @@ void *scheduing_module(void *ptr) // we need to accept jobs from commandline par
     /* ####################################################### */
 
 
-        pthread_cond_signal(&queue_not_empty);  
+        //pthread_cond_signal(&queue_not_empty);  
     }
+            //bubble_sort();
+    if(count >= 1){
+        pthread_cond_signal(&queue_not_empty); 
+    }
+
         if (terminate == 1 ){        pthread_cond_signal(&queue_not_empty); }
         /* Unlok the shared command queue */
         /* Simulate a low arrival rate */
@@ -399,15 +538,53 @@ void *scheduing_module(void *ptr) // we need to accept jobs from commandline par
 
     }
 
+
+
+};
+
+
+
+
+
+// Currently being called my thread !!!!!!
+void scheduing_module(struct job_info job_input) // we need to accept jobs from commandline parser
+{
+    char *message;
+    char *temp_cmd;
+    u_int i;
+    char num_str[8];
+    size_t command_size;
+    char *args[5];
+
+
+
+     
+        //queue[count] = &job_input;  old queuestyle prob best though
+        queue[buf_head] = job_input;
+        //count++;
+        buf_head++;
+        if (buf_head == CMD_BUF_SIZE)
+            buf_head = 0;
+        //bubble_sort();
+
+        //printf("In commandline: queue[%d] = %s\n", count, queue[count]); 
+  
+
 }
+
+
+
+
+
 
 
 
 void handler(sig) {
-printf("exev done");
+//printf("\nexev done");
 }
 
 
+// $$$$$$$$$$$$$$$$$$$$$ DISPATCH $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 //2
 void *dispatching_module(void *ptr)
 {
@@ -432,28 +609,31 @@ char *message;
 
 
 
-        /* Run the command scheduled in the queue */
-        //count--;
-        //printf("In executor: queue[%d] = %s\n", buf_tail, queue[buf_tail]); 
-        
-        /* 
-         * Note: system() function is a simple example.
-         * You should use execv() rather than system() here.
-         */
-
-       
-     //   printf("\nhere is the submitted job: %s\n", queue[0]->name);
-     //   printf("\nhere is the submitted job priority: %d\n", queue[0]->priority);
-
-       
+      
 
         char temp[100];
-        strcpy(temp, queue[0]->name); // converting char* to char[] for execv
-
+        //strcpy(temp, queue[0]->name); // converting char* to char[] for execv
+        strcpy(temp, queue[buf_tail].name);
         pid_t pid; // holds pid of child
   
         signal(SIGCHLD,handler); // handler to catch sigchld to tell when execv is finished.
 
+        
+
+
+
+        // this converts from double to string to be passed to argv
+        double temp_double = queue[buf_tail].est_cpu_time;
+        char arg_convert[5];
+        // only converts single decimal place
+        sprintf(arg_convert,"%.1f",queue[buf_tail].est_cpu_time);
+
+
+        char *my_args[5]; 
+        my_args[0] = arg_convert;
+        my_args[1] = NULL;
+
+        
         //puts("fork()ing");
         switch ((pid = fork()))
         {
@@ -464,7 +644,7 @@ char *message;
             case 0:
                 /* This is processed by the child */
                 
-                execv(temp, NULL);               
+                execv(temp, my_args);               
                 puts("Uh oh! If this prints, execv() must have failed");
                 exit(EXIT_FAILURE);
                 break;
@@ -473,8 +653,15 @@ char *message;
              //   puts ("This is a message from the parent");
                 break;
         }
+
+        pthread_cond_signal(&queue_not_full);
+        /* Unlok the shared command queue */
+        pthread_mutex_unlock(&cmd_queue_lock);
         int w, status;
-        w = waitpid(pid, &status, WNOHANG ); // this doesnt hang but only catches it after the next process starts.
+        w = waitpid(pid, NULL, 0 );
+
+        //printf("\nValue of w %d\n", w);
+
 
         //https://stackoverflow.com/questions/42840950/waitpid-and-fork-execs-non-blocking-advantage-over-a-syscall
         //https://stackoverflow.com/questions/43487950/how-to-handle-signals-when-process-is-waiting-in-waitpid
@@ -482,21 +669,23 @@ char *message;
         //system(temp); // run job in first position
                       // works great but program has to wait defeates the purpose 
 
+        
 
         count--; //remove when useing others.
-
-
+        buf_tail++;
+         if (buf_tail == CMD_BUF_SIZE)
+            buf_tail = 0;
 
       //  printf("Job is running...\n");
         /* Free the dynamically allocated memory for the buffer */
         //free(queue[buf_tail]);
      
         /* Move buf_tail forward, this is a circular queue */ 
-        pthread_cond_signal(&queue_not_full);
+       // pthread_cond_signal(&queue_not_full);
         /* Unlok the shared command queue */
-        pthread_mutex_unlock(&cmd_queue_lock);
+       // pthread_mutex_unlock(&cmd_queue_lock);
      //   printf("\n********DISPATCH_MOD UNLOCKED********\n");
-
+       // w = waitpid(pid, &status, WNOHANG ); // this doesnt hang but only catches it after the next process starts.
     } /* end for */
 
     
@@ -519,7 +708,51 @@ void help(){}
 void performance_measurements(){}
 
 //7 
-void automated_performance_evaluation(){}
 
 */
 /*########## End of functions ##########*/
+
+
+void automated_performance_evaluation(/*struct job_info *queue[]*/)
+{
+
+    struct job_info test_batch[5];
+
+    snprintf(test_batch[0].name, sizeof(test_batch[0].name), "%s", "process");
+    snprintf(test_batch[1].name, sizeof(test_batch[1].name), "%s", "process");
+    snprintf(test_batch[2].name, sizeof(test_batch[2].name), "%s", "process");
+    snprintf(test_batch[3].name, sizeof(test_batch[3].name), "%s", "process");
+    snprintf(test_batch[4].name, sizeof(test_batch[4].name), "%s", "process");
+
+    test_batch[0].arrival_time = 0;
+    test_batch[1].arrival_time = 0.2;
+    test_batch[2].arrival_time = 0.6;
+    test_batch[3].arrival_time = 0.4;
+    test_batch[4].arrival_time = 0.8;
+    
+    test_batch[0].est_cpu_time = 3;
+    test_batch[1].est_cpu_time = 1;
+    test_batch[2].est_cpu_time = 6;
+    test_batch[3].est_cpu_time = 1;
+    test_batch[4].est_cpu_time = 2;
+
+    int i = 0;
+   
+
+    for( i = 0; i < 5; i++)
+            {
+
+            queue[buf_head] = test_batch[i];
+            printf("\nhere is job: %d - %s\n",count, queue[buf_head].name); // works but gives error if no jobs
+
+            buf_head++;
+            count++;
+            if (buf_head == CMD_BUF_SIZE)
+            buf_head = 0;
+
+            printf("bufhead: %d", buf_head);
+
+            }
+
+
+};

@@ -13,12 +13,13 @@
 
 struct job_info      //maybe move this to a different file.
 {
-    int argv;  // this might be the time to run
+    double exec_time;  // this might be the time to run
     double est_cpu_time;
     int priority;
     double start_time;
     double finish_time;
     int wait;
+    double arrival_time;
     char* name[100];
 
     // can add arrival_time if needed
@@ -85,6 +86,8 @@ int cmd_check(char *args[], struct job_info *queue[], int size_of_queue)
             printf("****priority****\n");}
 
         else if(strcmp(args[0], "test") == 0){
+            //temp
+            automated_performance_evaluation(queue);
             printf("test\n");
         }
 
