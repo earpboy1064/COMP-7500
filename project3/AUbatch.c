@@ -30,6 +30,10 @@ typedef unsigned int u_int;
 #define SJF  2
 #define PRIORITY  3
 
+
+
+# define MAXMENUARGS 7
+
 //struct job_info *queue[];
 
 
@@ -60,21 +64,29 @@ pthread_cond_t queue_not_empty; /* Condition variable for buf_not_empty */
 u_int buf_head;
 u_int buf_tail;
 u_int count;
-u_int policy = FCFS;
+u_int policy = SJF;
 int terminate = 0; //-FLAG
 
 
+//################
 
+/* COMMENT BLOCK 
+# Refrences:
+# aubatch_sample.c Written by Xiao Qin 
+#
+#
+#
+# How to compile: 
+# gcc -g -w AUbatch.c -o AUbatch -lpthread
+#
+#
+#
+#
+#
+*/
 
-
-
-
-
-
-
-
-
-# define MAXMENUARGS 7
+/*########## Data structures Start ##########*/
+//d1
 
 
 
@@ -92,6 +104,43 @@ struct job_info      //maybe move this to a different file.
 
     // can add arrival_time if needed
 };
+
+
+//d2
+struct help_info
+{
+    char command[100];
+};
+
+
+//d3
+struct performance_info
+{
+    double total_cpu_time;
+    double total_waiting_time;
+    double turnaround_time;
+    int num_jobs;
+    double throughput;
+};
+
+//d4
+struct workload_info
+{
+    int num_of_jobs;
+    int arrival_rate; // testing interval 
+    double min_cpu_time;
+    double max_cpu_time;
+    int min_priority_level;
+    int max_priority_level;
+};
+
+//d5 
+struct scheduling_policy
+{
+    //enum polices {FCFS, SJF, PRIORITY};
+};
+
+/*########## Data structures END ##########*/
 
 
 struct job_info queue[CMD_BUF_SIZE];
@@ -156,7 +205,6 @@ int cmd_check(char *args[], int total_args, int size_of_queue)
             printf("****priority****\n");}
 
 
-
         else if(strcmp(args[0], "test") == 0){
             
             // checks to makesure the correct number of arguments are passed.
@@ -172,8 +220,6 @@ int cmd_check(char *args[], int total_args, int size_of_queue)
                 printf("test <benchmark> <policy> <num_of_jobs> <priority_levels> <min_CPU_time> <max_CPU_time>\n");
             }
 
-            
-
             else
             {
             automated_performance_evaluation(args);
@@ -183,6 +229,8 @@ int cmd_check(char *args[], int total_args, int size_of_queue)
 
         else if((strcmp(args[0], "quit") == 0)){
             printf("quit\n");
+            performance_measurements();
+            //print totals
             return 1;  // sets flag to signal end of use.
         }
 
@@ -197,62 +245,6 @@ return 0;
 
 
 
-//################
-
-/* COMMENT BLOCK 
-# Refrences:
-# aubatch_sample.c Written by Xiao Qin 
-#
-#
-#
-# How to compile: 
-# gcc -g -w AUbatch.c -o AUbatch -lpthread
-#
-#
-#
-#
-#
-*/
-
-/*########## Data structures Start ##########*/
-//d1
-
-
-//d2
-struct help_info
-{
-    char command[100];
-};
-
-
-//d3
-struct performance_info
-{
-    double total_cpu_time;
-    double total_waiting_time;
-    double turnaround_time;
-    int num_jobs;
-    double throughput;
-};
-
-//d4
-struct workload_info
-{
-    int num_of_jobs;
-    int arrival_rate; // testing interval 
-    double min_cpu_time;
-    double max_cpu_time;
-    int min_priority_level;
-    int max_priority_level;
-};
-
-//d5 
-struct scheduling_policy
-{
-    //enum polices {FCFS, SJF, PRIORITY};
-};
-
-/*########## Data structures END ##########*/
 
 /*########## start of functions ##########*/
 //1
@@ -290,10 +282,6 @@ struct performance_info batch_totals;
 int main( int argc, char *argv[])
 {
    
-
-
-
-
 
 
     print_menu();
@@ -350,6 +338,8 @@ void bubble_sort()
         int i = 0;
         int j = 0;
         double job_one, job_two;
+
+        /*
         for (i = 0; i < count - 1; i++)
         {
             for (j = 0; j < count-i-1; j++)
@@ -375,10 +365,58 @@ void bubble_sort()
                     queue[j+1] = *temp;
                 }
             }  
-         }
-    
+         
+         }*/
+         
+    int first_pos = buf_tail;
+    int second_pos = buf_tail + 1;
+    for (i = 0; i < count - 1; i++)
+        {
+            int first_pos = buf_tail;
+            int second_pos = buf_tail + 1;
+
+            for (j = 0; j < count-i-1; j++)
+            {
+                if (first_pos == CMD_BUF_SIZE)
+                first_pos = 0;
 
 
+                if (second_pos == CMD_BUF_SIZE)
+                second_pos = 0;
+
+
+
+                if (policy == SJF)
+                {
+                    job_one = queue[first_pos].est_cpu_time;
+                    job_two =  queue[second_pos].est_cpu_time;  
+                }
+
+                else if(policy == PRIORITY) // job assignments swapped to sort in reverse order
+                {
+                    job_one = queue[first_pos].priority;
+                    job_two =  queue[second_pos].priority;
+                }
+
+                if(job_one > job_two)
+                {
+                    //swap elements
+                    struct job_info temp;
+                    temp = queue[first_pos];
+                    queue[first_pos] = queue[second_pos];
+                    queue[second_pos] = temp;
+
+                    printf("Swapping %d and %d \n", first_pos, second_pos);
+                }
+
+                first_pos++;
+                second_pos++;
+
+            }  
+         
+        }
+
+    display_job_queue();
 }
 
 
@@ -399,19 +437,14 @@ void commandline_parser()
 {
     char *temp_cmd;
     u_int i;
-    char num_str[8];
     size_t command_size;
     char *args[5];
 
 
     /* Enter multiple commands in the queue to be scheduled */
-    //for (i = 0; i < NUM_OF_CMD; i++) { 
     while (terminate == 0){
         /* lock the shared command queue */
         pthread_mutex_lock(&cmd_queue_lock);
-     //   printf("\n********COMMAND_P locked 1********\n");
-        //printf("In commandline: count = %d\n", count);
-       // printf("In commandline_parser\n");
         while (count == CMD_BUF_SIZE) {
             pthread_cond_wait(&queue_not_full, &cmd_queue_lock);
         }
@@ -454,18 +487,19 @@ void commandline_parser()
         // holds the job to be put into the queue.
         struct job_info job_input;
         
-
-
         // structure of command <command> <job name> <time?> <priority?> 
+
+
 
         // Switch to build job based on input parameters
         int i = 0;
 
-    if (strcmp(args[0], "r") == 0){
-        while (i < total_arguments) 
-        {
+        if (strcmp(args[0], "r") == 0){
+            while (i < total_arguments) 
+            {
         
-            switch( i ){
+             switch( i )
+             {
                 case 1:
                     snprintf(job_input.name, sizeof(job_input.name), "%s", args[1]);
                     //shorturl.at/mxzQ6  Stack overflow reference
@@ -475,18 +509,19 @@ void commandline_parser()
                     break;
                 case 3:
                     job_input.est_cpu_time = atof(args[3]);
+             }
+            
+             i++;
             }
-            i++;
-        }
     
-        scheduing_module(job_input);
+        scheduing_module(job_input); // adds the job.
         count++;
         //bubble_sort();
         
 
     /* ####################################################### */
     }
-            //bubble_sort();
+           // bubble_sort();
     if(count >= 1){
         pthread_cond_signal(&queue_not_empty); 
     }
@@ -512,10 +547,8 @@ void commandline_parser()
 
 void scheduing_module(struct job_info job_input) // we need to accept jobs from commandline parser
 {
-    char *message;
     char *temp_cmd;
     u_int i;
-    char num_str[8];
     size_t command_size;
     char *args[5];
 
@@ -572,7 +605,9 @@ void dispatching_module()
 
 
 
-  
+        
+        
+        //bubble_sort();
         signal(SIGCHLD,handler); // handler to catch sigchld to tell when execv is finished.
         // NOT USED CURRENTLY 
     
@@ -705,11 +740,43 @@ void display_job_queue()
 void help(){}
 
 //6
-void performance_measurements(){}
+*/
+
+
+void performance_measurements()
+{
+
+
+int num_jobs = batch_totals.num_jobs;
+
+double total_cpu_time = batch_totals.total_cpu_time;
+
+
+double Average_turn_around_time;
+
+
+double Average_cpu_time = total_cpu_time /  num_jobs;
+
+
+double Average_waiting_time;
+
+
+double throughput;
+
+
+    printf("Total number of job submitted: %d\n",num_jobs);
+    
+    printf("Average CPU time: %f\n",Average_cpu_time);
+
+
+        //printf("Average turnaround time: %d\n", batch_totals.num_jobs);
+
+
+}
 
 //7 
 
-*/
+
 /*########## End of functions ##########*/
 
 
@@ -745,7 +812,7 @@ if(strcmp(args[1], "load") ==0 )
 
 
     test_batch[0].est_cpu_time = 4.4;
-    test_batch[1].est_cpu_time = 1;
+    test_batch[1].est_cpu_time = .5;
     test_batch[2].est_cpu_time = 6;
     test_batch[3].est_cpu_time = 1;
     test_batch[4].est_cpu_time = 2;
@@ -790,8 +857,6 @@ if(strcmp(args[1], "load") ==0 )
         for( i =0; i < num_jobs; i++)
         {
                 
-           
-
             // reference https://stackoverflow.com/questions/33058848/generate-a-random-double-between-1-and-1
             double range = (max_cpu - min_cpu); 
             double div = RAND_MAX / range;
@@ -828,4 +893,7 @@ if(strcmp(args[1], "load") ==0 )
         */
 
     }
+    
+    bubble_sort();
+
 }
