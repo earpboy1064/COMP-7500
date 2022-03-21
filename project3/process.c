@@ -35,7 +35,7 @@ int main(int argc, char *argv[] )
   //printf("sleep time %f ", sleep_time);
 
   usleep(sleep_time);
-  printf("done");
+  //printf("done");
   return 0;
 }
 
