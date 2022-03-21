@@ -1,2 +1,4 @@
 hellomake: AUbatch.c
-	gcc -g -w AUbatch.c -o AUbatch -lpthread
+	gcc -g -c command_parser.c
+	gcc -g -w -c AUbatch-temp.c -lpthread
+	gcc -o batchtest AUbatch-temp.o command_parser.o  -lpthread -lm
