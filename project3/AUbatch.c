@@ -40,17 +40,6 @@ typedef unsigned int u_int;
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 /* 
  * When a job is submitted, the job must be compiled before it
  * is running by the executor thread (see also executor()).
@@ -97,6 +86,7 @@ struct job_info      //maybe move this to a different file.
     int priority;
     double start_time;
     double finish_time;
+    struct timeval wait_start, wait_end;
     int wait;
     double arrival_time;
     char* name[100];
@@ -117,7 +107,7 @@ struct help_info
 struct performance_info
 {
     double total_cpu_time;
-    double total_waiting_time;
+    long int total_waiting_time;
     double turnaround_time;
     int num_jobs;
     double throughput;
@@ -208,10 +198,9 @@ int cmd_check(char *args[], int total_args, int size_of_queue)
         else if(strcmp(args[0], "test") == 0){
             
             // checks to makesure the correct number of arguments are passed.
-           if(strcmp(args[1], "load") ==0 )
+           if(strcmp(args[1], "load") == 0 )
             {
              automated_performance_evaluation(args);
-
             }
            
             else if (total_args != 7) 
@@ -250,7 +239,7 @@ return 0;
 //1
 //void scheduing_module(struct scheduling_policy policy, struct workload_info workload, struct job_info_queue job_info);
 
-void commandline_parser();
+void commandline_parser( );
 
 //2
 void dispatching_module(); // job execution
@@ -271,7 +260,6 @@ void performance_measurements();
 void automated_performance_evaluation();
 
 
-
 void bubble_sort();
 /*########## End of functions ##########*/
 
@@ -279,10 +267,25 @@ void bubble_sort();
 struct performance_info batch_totals;
 
 
+
+
+
+struct timeval start, end;
+ 
+
+
+
+
 int main( int argc, char *argv[])
 {
-   
+        gettimeofday(&start, NULL);
 
+
+    
+
+  // time_t beginning_time = time(NULL);
+
+   // gettimeofday(&start, NULL);
 
     print_menu();
 /* FROM aubtach_sample.c Written by Xiao Qin*/ 
@@ -299,7 +302,7 @@ int main( int argc, char *argv[])
    // iret2 = pthread_create(&executor_thread, NULL, executor, (void*) message2);
     printf("\n\nwe compiled correctly!!\n\n");
     //iret1 = pthread_create(&command_thread, NULL, scheduing_module, (void*) message1);
-    iret1 = pthread_create(&command_thread, NULL, commandline_parser,NULL);
+    iret1 = pthread_create(&command_thread, NULL, commandline_parser,  NULL);
     iret2 = pthread_create(&executor_thread, NULL, dispatching_module, NULL);
    
 
@@ -329,45 +332,14 @@ return 0;
 /*########## start of functions ##########*/
 //1
 
-
 void bubble_sort()
 {
-
         
        // Sorting using bubble sort
         int i = 0;
         int j = 0;
         double job_one, job_two;
 
-        /*
-        for (i = 0; i < count - 1; i++)
-        {
-            for (j = 0; j < count-i-1; j++)
-            {
-                if (policy == SJF)
-                {
-                    job_one = queue[j].est_cpu_time;
-                    job_two =  queue[j+1].est_cpu_time;  
-                }
-
-                else if(policy == PRIORITY) // job assignments swapped to sort in reverse order
-                {
-                    job_two = queue[j].priority;
-                    job_one =  queue[j+1].priority;
-                }
-
-                if(job_one > job_two)
-                {
-                    //swap elements
-                    struct job_info *temp;
-                    temp = &queue[j];
-                    queue[j] = queue[j+1];
-                    queue[j+1] = *temp;
-                }
-            }  
-         
-         }*/
-         
     int first_pos = buf_tail;
     int second_pos = buf_tail + 1;
     for (i = 0; i < count - 1; i++)
@@ -383,8 +355,6 @@ void bubble_sort()
 
                 if (second_pos == CMD_BUF_SIZE)
                 second_pos = 0;
-
-
 
                 if (policy == SJF)
                 {
@@ -411,9 +381,7 @@ void bubble_sort()
 
                 first_pos++;
                 second_pos++;
-
             }  
-         
         }
 
     display_job_queue();
@@ -426,12 +394,7 @@ void bubble_sort()
 
 
 
-/*
-void scheduing_module(struct scheduling_policy policy, struct workload_info workload, struct job_info job)
-{
 
-}
-*/
 
 void commandline_parser()
 {
@@ -439,6 +402,11 @@ void commandline_parser()
     u_int i;
     size_t command_size;
     char *args[5];
+
+   
+    long mtime, secs, usecs;    
+
+   
 
 
     /* Enter multiple commands in the queue to be scheduled */
@@ -462,10 +430,8 @@ void commandline_parser()
         int size = strlen(temp_cmd);
 
         pthread_mutex_lock(&cmd_queue_lock);  
-//        printf("\n********COMMAND_P locked 3********\n");
 
 
-/* ####################################################### */
 
         // removes the '\n' from getline input 
         // stackoverflow suggestion: shorturl.at/bhDEG
@@ -489,9 +455,12 @@ void commandline_parser()
         
         // structure of command <command> <job name> <time?> <priority?> 
 
+/* ######################## JOB SUBMISSION ############################### */
 
 
         // Switch to build job based on input parameters
+
+        
         int i = 0;
 
         if (strcmp(args[0], "r") == 0){
@@ -510,18 +479,17 @@ void commandline_parser()
                 case 3:
                     job_input.est_cpu_time = atof(args[3]);
              }
+                gettimeofday(&job_input.wait_start, NULL);
+
             
              i++;
             }
     
         scheduing_module(job_input); // adds the job.
         count++;
-        //bubble_sort();
         
-
     /* ####################################################### */
     }
-           // bubble_sort();
     if(count >= 1){
         pthread_cond_signal(&queue_not_empty); 
     }
@@ -532,13 +500,7 @@ void commandline_parser()
 
         /* Unlok the shared command queue */
         pthread_mutex_unlock(&cmd_queue_lock);
-
-
-
     }
-
-
-
 };
 
 
@@ -574,11 +536,23 @@ void scheduing_module(struct job_info job_input) // we need to accept jobs from 
 
 
 void handler(sig) { // not used currently 
-completed_job_queue[completed_counter] = queue[buf_tail];
-completed_counter++;
 
+        // messed up needs to do this when its called 
+   // long mtime, secs, usecs;    
 
+        
+    //gettimeofday(&queue[buf_tail].wait_end, NULL);
+   // secs  = queue[buf_tail].wait_end.tv_sec  - queue[buf_tail].wait_start.tv_sec;
+   // usecs = queue[buf_tail].wait_end.tv_usec - queue[buf_tail].wait_start.tv_usec;
+   // mtime = ((secs) * 1000 + usecs/1000.0) + 0.5;
+
+   // printf("milli waited = %ld", mtime);
+
+   // batch_totals.total_waiting_time += mtime;
 }
+
+
+
 
 
 // $$$$$$$$$$$$$$$$$$$$$ DISPATCH $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -605,15 +579,12 @@ void dispatching_module()
 
 
 
-        
-        
-        //bubble_sort();
         signal(SIGCHLD,handler); // handler to catch sigchld to tell when execv is finished.
-        // NOT USED CURRENTLY 
     
 
-        // ******* Building argument list to be passed to argv **********
 
+
+        // ******* Building argument list to be passed to argv **********
         // this converts from double to string to be passed to argv
         char process_name[100];
         strcpy(process_name, queue[buf_tail].name);
@@ -632,13 +603,31 @@ void dispatching_module()
 
          strcpy(queue[buf_tail].progress,"Run"); // updating job information
 
-        //timing reference https://www.techiedelight.com/find-execution-time-c-program/
+
+
+        //Reference
+        //https://stackoverflow.com/questions/9871071/why-c-clock-returns-0
+        gettimeofday(&queue[buf_tail].wait_end, NULL);
+        
+        // *************** Calculating wait *****************************************
+        long mtime, secs, usecs;    
+        secs  = queue[buf_tail].wait_end.tv_sec  - queue[buf_tail].wait_start.tv_sec;
+        usecs = queue[buf_tail].wait_end.tv_usec - queue[buf_tail].wait_start.tv_usec;
+        mtime = ((secs) * 1000 + usecs/1000.0) + 0.5;
+        printf("milli waited = %ld", mtime);
+        batch_totals.total_waiting_time += mtime;
+        // *************** Calculating wait *****************************************
+
+
+
+
+
         //starting runtime for process
-        time_t start;
-        start = time(NULL);
+        struct timeval exec_start, exec_end;
+        gettimeofday(&exec_start, NULL);
+        //
 
-
-         pid_t pid; // holds pid of child
+        pid_t pid; // holds pid of child
 
         switch ((pid = fork()))
         {
@@ -655,7 +644,8 @@ void dispatching_module()
             default:
                 break;
         }
-      
+
+        
 
 
         // going ahead and unlocking the queue while process is running.
@@ -672,13 +662,21 @@ void dispatching_module()
 
         //******* PERFORMANCE INFO UPDATED ***************
         // calculating the time spent running process
-        time_t end = time(NULL); //  current issue is it doesnt give decimals
-        batch_totals.total_cpu_time += (end - start);
+
+        gettimeofday(&exec_end, NULL);
+        secs  = exec_end.tv_sec  - exec_start.tv_sec;
+        usecs = exec_end.tv_usec - exec_start.tv_usec;
+        mtime = ((secs) * 1000 + usecs/1000.0) + 0.5;
+        
+        batch_totals.total_cpu_time += mtime;
         batch_totals.num_jobs++;
-        printf("exec time %.1f \n\n", batch_totals.total_cpu_time);
-        //printf("\nValue of w %d\n", w); //debug
+        printf(" exec time %.1f \n\n", batch_totals.total_cpu_time);
+        
         //******* PERFORMANCE INFO UPDATED ***************
         
+       
+
+
         // updating tail location
         count--; 
         buf_tail++;
@@ -727,13 +725,13 @@ void display_job_queue()
 
 		    
                 
-            printf("%s      ",queue[temp_tail].name);
+            printf("%s %d    ",queue[temp_tail].name, i+1);
             printf("%.1f     ",queue[temp_tail].est_cpu_time);
             printf("%d      ",queue[temp_tail].priority);  
             printf("%.1f    ", queue[temp_tail].arrival_time);   
-            printf("    %s\n", queue[temp_tail].progress );       
+            printf("         %s\n", queue[temp_tail].progress );       
             temp_tail++; // works but gives error if no jobs
-        }
+    }
 }
 /*
 //5
@@ -758,15 +756,17 @@ double Average_turn_around_time;
 double Average_cpu_time = total_cpu_time /  num_jobs;
 
 
-double Average_waiting_time;
+double Average_waiting_time = batch_totals.total_waiting_time / num_jobs;
 
 
-double throughput;
+double throughput = total_cpu_time ;
 
 
     printf("Total number of job submitted: %d\n",num_jobs);
     
     printf("Average CPU time: %f\n",Average_cpu_time);
+
+    printf("Average wait time: %.1fs\n",Average_waiting_time / 1000);
 
 
         //printf("Average turnaround time: %d\n", batch_totals.num_jobs);
@@ -783,8 +783,9 @@ double throughput;
 void automated_performance_evaluation(char *args[])
 {
 
-int choice,  policy,  num_jobs,  pri_levels;
+int choice,  policy,  num_jobs,  pri_levels,  wait_start;
 double min_cpu,  max_cpu;
+//char policy[]
 
 if(strcmp(args[1], "load") ==0 )
 {
@@ -808,14 +809,32 @@ if(strcmp(args[1], "load") ==0 )
     test_batch[3].priority = 3;
     test_batch[4].priority = 5;
 
-
-
-
     test_batch[0].est_cpu_time = 4.4;
     test_batch[1].est_cpu_time = .5;
     test_batch[2].est_cpu_time = 6;
     test_batch[3].est_cpu_time = 1;
     test_batch[4].est_cpu_time = 2;
+
+
+    gettimeofday(&test_batch[0].wait_start, NULL);
+    gettimeofday(&test_batch[1].wait_start, NULL);
+    gettimeofday(&test_batch[2].wait_start, NULL);
+    gettimeofday(&test_batch[3].wait_start, NULL);
+    gettimeofday(&test_batch[4].wait_start, NULL);
+
+    strcpy(test_batch[0].progress,"");
+    strcpy(test_batch[1].progress,"");
+    strcpy(test_batch[2].progress,"");
+    strcpy(test_batch[3].progress,"");
+    strcpy(test_batch[4].progress,"");
+
+
+
+    printf("start time: %ld \n", test_batch[0].wait_start.tv_sec);
+    printf("start time:  %ld \n", test_batch[1].wait_start.tv_sec);
+    printf("start time:  %ld \n", test_batch[2].wait_start.tv_sec);
+    printf("start time:  %ld \n", test_batch[3].wait_start.tv_sec);
+
 
     int i = 0;
    
@@ -831,7 +850,7 @@ if(strcmp(args[1], "load") ==0 )
             if (buf_head == CMD_BUF_SIZE)
             buf_head = 0;
 
-            printf("bufhead: %d", buf_head);
+            //printf("bufhead: %d", buf_head);
 
             }
 
@@ -840,39 +859,57 @@ if(strcmp(args[1], "load") ==0 )
     else 
     {
       
-      policy = atoi(args[2]);
-      num_jobs = atoi(args[3]);
-      pri_levels = atoi(args[4]);
-      sscanf(args[5], "%lf", &min_cpu); 
-      sscanf(args[6], "%lf", &max_cpu);
+       // input_policy = atoi(args[2]);
+
+       // /switch( input_policy )
+       // {
+       //     case FCFS
+
+      //  }
+
+        num_jobs = atoi(args[3]);
+        pri_levels = atoi(args[4]);
+        sscanf(args[5], "%lf", &min_cpu); 
+        sscanf(args[6], "%lf", &max_cpu);
         
         
-    double random_cpu_time;
+        double random_cpu_time;
 
-    srand ( time ( NULL));
+        srand ( time ( NULL));
 
 
-//test test bench 3 5 3 1 5
+        //test test bench 3 5 3 1 5
         int i = 0;
         for( i =0; i < num_jobs; i++)
         {
                 
             // reference https://stackoverflow.com/questions/33058848/generate-a-random-double-between-1-and-1
+
             double range = (max_cpu - min_cpu); 
+
             double div = RAND_MAX / range;
+
             random_cpu_time = min_cpu + (rand() / div); // random value maybe try and reduce decial places
 
+
             queue[buf_head].est_cpu_time = random_cpu_time; // cpu time
-
-            printf("%d\n", rand() % pri_levels+1);
-
 
             queue[buf_head].priority = rand() % pri_levels+1; // priority
 
             snprintf(queue[buf_head].name, sizeof(queue[buf_head].name), "%s", "process"); //name
 
+            gettimeofday(&queue[buf_head].wait_start, NULL);
+
+            strcpy(queue[buf_head].progress,"");
 
 
+           
+
+
+
+            //printf("%d\n", rand() % pri_levels+1);
+
+           // printf("time &ld\n", beginning);
 
            // printf("\nhere is job: %d - %s\n",count, queue[buf_head].name); // works but gives error if no jobs
 
