@@ -9,7 +9,7 @@
 #include <math.h>
 #include <time.h>
 #include "command_parser.h"
-
+//#include "menues.h"
 #include "global.h"
 
 #define CMD_BUF_SIZE 10 /* The size of the command queue */
@@ -17,6 +17,24 @@
 #define MAX_CMD_LEN  512 /* The longest commandline length */
 
 # define MAXMENUARGS 8
+
+void print_menu()
+{
+printf("\nWelcome to Wyatts AUbatch batch job scheduler Version 1.0 Type ‘help’ to find more about AUbatch commands.\n ");
+};
+
+void print_help_menu() // simple print menu can be changed later
+{
+printf("\nrun: <job> <time> <pri>: submit a job named <job>, execution time is <time>, priority is <pri>.\n");
+printf("list: display the job status.\n");
+printf("fcfs: change the scheduling policy to FCFS.\n");
+printf("sjf: change the scheduling policy to SJF.\n");
+printf("priority: change the scheduling policy to priority.\n");
+printf("test <benchmark> <policy> <num_of_jobs> <priority_levels>\n<min_CPU_time> <max_CPU_time>\n");
+printf("quit: Exit AUbatch\n");
+}
+
+
 
 int cmd_dispatch(char *cmd, char* temp[]) {
 	time_t beforesecs, aftersecs, secs;
@@ -121,43 +139,22 @@ return 0;
 }
 
 
-void commandline_parser()
+void commandline_parser(char *input_cmd)
 {
-    char *temp_cmd;
-    u_int i;
+    //char *temp_cmd;
+    
     size_t command_size;
     char *args[5];
 
    
     long mtime, secs, usecs;    
 
-    /* Enter multiple commands in the queue to be scheduled */
-    while (terminate == 0){
-        /* lock the shared command queue */
-        pthread_mutex_lock(&cmd_queue_lock);
-        while (count == CMD_BUF_SIZE) {
-            pthread_cond_wait(&queue_not_full, &cmd_queue_lock);
-        }
-        /* Dynamically create a buffer slot to hold a commandline */
 
-        pthread_mutex_unlock(&cmd_queue_lock); // UNLOCK
-   //     printf("\n********COMMAND_P UNLOCKED 2********\n");
-        printf("Please submit a batch processing job:\n");
-        printf(">"); 
-
-        
-        // collects command
-        temp_cmd = malloc(MAX_CMD_LEN*sizeof(char));
-        getline(&temp_cmd, &command_size, stdin);  
-        int size = strlen(temp_cmd);
-
-        pthread_mutex_lock(&cmd_queue_lock);  
-
-
+        int size = strlen(input_cmd);
 
         // removes the '\n' from getline input 
         // stackoverflow suggestion: shorturl.at/bhDEG
-        if (temp_cmd[size - 1] == '\n') temp_cmd[--size] = 0;
+        if (input_cmd[size - 1] == '\n') input_cmd[--size] = 0;
  
 
        
@@ -165,7 +162,7 @@ void commandline_parser()
 
         // breaks command up and puts the parts in args
         // sends temp command to be processed
-        total_arguments = cmd_dispatch(temp_cmd,args);
+        total_arguments = cmd_dispatch(input_cmd,args);
 
         terminate = cmd_check(args, total_arguments, count);
         /*   Needs to collect new input after displaying the help   */
@@ -186,7 +183,7 @@ void commandline_parser()
         if (strcmp(args[0], "r") == 0){
             while (i < total_arguments) 
             {
-        
+               
              switch( i )
              {
                 case 1:
@@ -204,22 +201,18 @@ void commandline_parser()
             
              i++;
             }
-    
-        scheduing_module(job_input); // adds the job.
+        
+        queue[buf_head] = job_input;
+        buf_head++;
+        if (buf_head == CMD_BUF_SIZE)
+            buf_head = 0;
+
         count++;
         
     /* ####################################################### */
     }
-    if(count >= 1){
-        pthread_cond_signal(&queue_not_empty); 
-    }
-
-        // allows for dispatch thread to shutdown
-        if (terminate == 1 ){pthread_cond_signal(&queue_not_empty); }
 
 
-        /* Unlok the shared command queue */
-        pthread_mutex_unlock(&cmd_queue_lock);
-    }
+
 };
 

@@ -10,8 +10,10 @@
 #include <time.h>
 #include "global.h"
 #include "command_parser.h"
+#include "scheduling_module.h"
+
 //#include "tokenizer.h"
-#include "menues.h"
+//#include "menues.h"
 # define MAXMENUARGS 8
 
 //############  From Aubatch_simple.c
@@ -78,7 +80,7 @@ void *executor( void *ptr );    /* To simulate job execution */
 
 /*########## start of functions ##########*/
 //1
-//void scheduing_module(struct scheduling_policy policy, struct workload_info workload, struct job_info_queue job_info);
+//void scheduling_module(struct scheduling_policy policy, struct workload_info workload, struct job_info_queue job_info);
 
 //void commandline_parser( );
 
@@ -86,7 +88,7 @@ void *executor( void *ptr );    /* To simulate job execution */
 void dispatching_module(); // job execution
 
 //3
-void scheduing_module(struct job_info job_input); // scheduling and submission
+//void scheduling_module(); // scheduling and submission
 
 //4 
 void display_job_queue();
@@ -113,7 +115,7 @@ int main( int argc, char *argv[])
 
 
     policy = FCFS;
-    printf("in alt 2 build\n\n");
+    printf("in alt 3 build\n\n");
     print_menu();
 /* FROM aubtach_sample.c Written by Xiao Qin*/ 
     pthread_t command_thread, executor_thread; /* Two concurrent threads */
@@ -128,8 +130,8 @@ int main( int argc, char *argv[])
    // iret1 = pthread_create(&command_thread, NULL, commandline, (void*) message1);
    // iret2 = pthread_create(&executor_thread, NULL, executor, (void*) message2);
     printf("\n\nwe compiled correctly!!\n\n");
-    //iret1 = pthread_create(&command_thread, NULL, scheduing_module, (void*) message1);
-    iret1 = pthread_create(&command_thread, NULL, commandline_parser,  NULL);
+    //iret1 = pthread_create(&command_thread, NULL, scheduling_module, (void*) message1);
+    iret1 = pthread_create(&command_thread, NULL, scheduling_module,  NULL);
     iret2 = pthread_create(&executor_thread, NULL, dispatching_module, NULL);
    
 
@@ -164,8 +166,6 @@ void bubble_sort()
     this is to prevent it getting stuck in the loops
     also you do not need to order a list < 2.
     */
-
-
     if(count > 2 )
     {
        // Sorting using bubble sort
@@ -235,31 +235,64 @@ the schedular can then add the job to the queue when its arival time is reached.
 
 
 
+/*
 
-
-void scheduing_module(struct job_info job_input) // we need to accept jobs from commandline parser
+void scheduling_module() // we need to accept jobs from commandline parser
 {
     char *temp_cmd;
-    u_int i;
+    //u_int i;
     size_t command_size;
-    char *args[5];
+    //char *args[5];
+    struct job_info job_input;
+    
+    /* Enter multiple commands in the queue to be scheduled 
+    while (terminate == 0){
+        /* lock the shared command queue 
+        pthread_mutex_lock(&cmd_queue_lock);
+        while (count == CMD_BUF_SIZE) {
+            pthread_cond_wait(&queue_not_full, &cmd_queue_lock);
+        }
+        /* Dynamically create a buffer slot to hold a commandline 
 
+        pthread_mutex_unlock(&cmd_queue_lock); // UNLOCK
+        printf("Please submit a batch processing job:\n");
+        printf(">"); 
 
+        
 
+        // collects command
+        temp_cmd = malloc(MAX_CMD_LEN*sizeof(char));
+        getline(&temp_cmd, &command_size, stdin);  
+        int size = strlen(temp_cmd);
+
+        // critical section 
+        pthread_mutex_lock(&cmd_queue_lock);  
+
+       
      
-        queue[buf_head] = job_input;
-        buf_head++;
-        if (buf_head == CMD_BUF_SIZE)
-            buf_head = 0;
-        //bubble_sort();
+        commandline_parser(temp_cmd);
 
-        //printf("In commandline: queue[%d] = %s\n", count, queue[count]); 
+    
+
+        if(count >= 1){
+            pthread_cond_signal(&queue_not_empty); 
+        }
+
+        // allows for dispatch thread to shutdown
+        if (terminate == 1 ){pthread_cond_signal(&queue_not_empty); }
+
+
+        /* Unlok the shared command queue 
+        pthread_mutex_unlock(&cmd_queue_lock);
+
+
+    }
   
 
 }
 
 
-
+*/
 
 
 
