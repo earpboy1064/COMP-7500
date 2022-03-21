@@ -1,2 +1,2 @@
 hellomake: AUbatch.c
-gcc -g -w AUbatch.c -o AUbatch -lpthread
+	gcc -g -w AUbatch.c -o AUbatch -lpthread

@@ -105,6 +105,7 @@ struct performance_info
     double throughput;
 };
 
+
 //d4
 struct workload_info
 {
