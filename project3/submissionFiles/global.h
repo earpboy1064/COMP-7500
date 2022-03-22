@@ -1,3 +1,5 @@
+// Wyatt LeMaster COMP7500 AUBATCH
+// Final verison 
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -8,17 +10,15 @@
 #include <signal.h>
 #include <math.h>
 #include <time.h>
+#define CMD_BUF_SIZE 50 /* The size of the command queue */
 
 
-
-
+// global variabels used for keeping track of queue
 u_int count;
 u_int buf_head;
 u_int buf_tail;
 
-#define CMD_BUF_SIZE 10 /* The size of the command queue */
-
-
+// global variables that allow setting of policy and marking termination
 u_int policy;
 int terminate; //-FLAG
 
@@ -29,9 +29,12 @@ pthread_cond_t queue_not_full; /* Condition variable for buf_not_full */
 pthread_cond_t queue_not_empty; /* Condition variable for buf_not_empty */
 
 
-struct job_info      //maybe move this to a different file.
+
+/* ####################  Global structure def ############*/
+struct job_info     
 {
-    double exec_time;  // this might be the time to run
+    int process_num;
+    double exec_time;  
     double est_cpu_time;
     int priority;
     double start_time;
@@ -42,15 +45,7 @@ struct job_info      //maybe move this to a different file.
     char* name[100];
     char progress[5];
 
-    // can add arrival_time if needed
-};
-
-
-
-//d2
-struct help_info
-{
-    char command[100];
+    
 };
 
 
@@ -69,22 +64,19 @@ struct performance_info
 struct workload_info
 {
     int num_of_jobs;
-    int arrival_rate; // testing interval 
+    int arrival_rate; 
     double min_cpu_time;
     double max_cpu_time;
     int min_priority_level;
     int max_priority_level;
 };
 
-//d5 
-struct scheduling_policy
-{
-    //enum polices {FCFS, SJF, PRIORITY};
-};
 
 /*########## Data structures END ##########*/
 
 
 struct job_info queue[CMD_BUF_SIZE];
+
 struct job_info completed_job_queue[1000];
 
+struct performance_info batch_totals;
