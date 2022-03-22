@@ -12,12 +12,22 @@
 #include "global.h"
 
 
+/*
+This module handles scheduling thread and calling of the commandline parser
+
+It controls the locking and unlocking of the queue using mutex and CVs
+
+
+
+
+
+
+
+*/
 void scheduling_module() // we need to accept jobs from commandline parser
 {
     char *temp_cmd;
-    //u_int i;
     size_t command_size;
-    //char *args[5];
     struct job_info job_input;
     
     /* Enter multiple commands in the queue to be scheduled */
