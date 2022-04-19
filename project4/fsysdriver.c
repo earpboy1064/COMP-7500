@@ -26,17 +26,26 @@ int main(int argc, char * argv[]) {
   readImage("image1.img"); 
 /* Testing need to remove below*/
 //printBuffer(buffer1,BLOCK_SIZE);
-  mkDirStruct();
-
-
-
-
+  //mkDirStruct();
+  
+  //int j = 0;
+  //for ( j = 0; j < 32; j++)
+// {
+ // print_extent(j);
+ // }
+ 
 /* required functions */
-  //makeFreeList(); 
-  //cpmDir(); 
-  //printFreeList(); 
-  //cpmDelete("shortf.ps");
-  //cpmDir();
+  makeFreeList(); 
+  
+  cpmDir(); 
+
+
+  printFreeList(); 
+
+ 
+  cpmDelete(" shortf.ps");
+  cpmDir();
+  
   //cpmRename("mytestf1.txt","mytest2.tx");
   //fprintf(stdout,"cpmRename return code = %d,\n",cpmRename("mytestf","mytestv2.x")); 
   //cpmDir(); 

@@ -37,11 +37,13 @@ typedef uint8_t Extent[32];
 //pointer to a buffer of memory holding the contents of disk block 0 (e), and an integer index
 // which tells which extent from block zero (extent numbers start with 0) to use to make the
 // DirStructType value to return. 
-DirStructType *mkDirStruct(/*int index,uint8_t *e*/); 
+DirStructType *mkDirStruct(int index,uint8_t *e); 
 
 // function to write contents of a DirStructType struct back to the specified index of the extent
 // in block of memory (disk block 0) pointed to by e
 void writeDirStruct(DirStructType *d, uint8_t index, uint8_t *e); 
+
+void print_extent(); // debug needs to be removed before submission
 
 // populate the FreeList global data structure. freeList[i] == true means 
 // that block i of the disk is free. block zero is never free, since it holds
