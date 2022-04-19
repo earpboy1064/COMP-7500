@@ -42,13 +42,14 @@ int main(int argc, char * argv[]) {
 
   printFreeList(); 
 
- 
-  cpmDelete(" shortf.ps");
+  print_extent(3);
+  cpmDelete("shortf.ps");
+  //print_extent(3);
   cpmDir();
   
   //cpmRename("mytestf1.txt","mytest2.tx");
   //fprintf(stdout,"cpmRename return code = %d,\n",cpmRename("mytestf","mytestv2.x")); 
   //cpmDir(); 
-  //printFreeList(); 
+  printFreeList(); 
 }
 

@@ -9,7 +9,7 @@
 //static uint8_t disk[256][1024]; 
 
 bool freelist[255];
-uint8_t dBlock[BLOCK_SIZE];
+//uint8_t block0[BLOCK_SIZE];
 
 
 DirStructType *mkDirStruct(int index, uint8_t *e)
@@ -100,13 +100,13 @@ DirStructType *mkDirStruct(int index, uint8_t *e)
 // debugg remove before submission
 void print_extent(int index)
  {
- // uint8_t dBlock[BLOCK_SIZE];
-  //blockRead(dBlock,0);
+  uint8_t block0[BLOCK_SIZE];
+  blockRead(block0,0);
 
 
   DirStructType *extent;
 
-  extent = mkDirStruct(index,dBlock);
+  extent = mkDirStruct(index,block0);
   printf("ex:%2d status:%2x name:%8s  ext:%3s ", index+1, extent->status, extent->name, extent->extension);
   printf("XL:%2x BC:%2x XH:%2x RC:%2x\n", extent->XL,extent->BC,extent->XH,extent->RC);
   int j = 0;
@@ -122,17 +122,18 @@ void makeFreeList(){
 
   memset(freelist, true, sizeof freelist); // sets array to all true
 
-  //uint8_t dBlock[BLOCK_SIZE];
+  uint8_t block0[BLOCK_SIZE];
 
-  blockRead(dBlock,0); // this should be the only block read
+  blockRead(block0,0); // this should be the only block read
   DirStructType *extent;
+
   int j = 0;
   int counter = 0;
 
   for( counter = 0; counter < 32; counter++)
   {
 
-    extent = mkDirStruct(counter,dBlock);
+    extent = mkDirStruct(counter,block0);
 
     freelist[0] = false; // block 0 is always in use.
 
@@ -178,87 +179,138 @@ void printFreeList()
 }
 
 
+int findExtentWithName(char *name, uint8_t *block0)
+{
+
+  int index = 0;
+  DirStructType *extent;
+
+  int i = 0;
+  char file_name[9];
+  char file_extension[4];
+
+  for (i = 0; i < 9; i++)
+  {
+    if(name[i] == '.')
+    {
+        file_name[i] = '\0';
+    }
+    else if(name[i] == ' ')
+    {
+        file_name[i] = '\0';
+    }
+    else
+    {
+        file_name[i] = name[i];
+    }
+  }
+  //printf("the file name is %s \n", file_name);
+  for( index = 0; index < 32; index++)
+  {
+    extent = mkDirStruct(index,block0);
+
+    if(strcmp(extent->name, file_name) == 0)
+    {
+     //printf("we have a match in our NEW FUNCION YAY the index is:%d\n", index);
+     return index;
+    }
+  }
+
+  return -1; // filename not found
+}
+
+
+
+
 void cpmDir()
  {
   
   int index = 0;
-  //uint8_t dBlock[BLOCK_SIZE];
-  //blockRead(dBlock,0);
+  uint8_t block0[BLOCK_SIZE];
+  blockRead(block0,0);
   DirStructType *extent;
 
 
   for( index = 0; index < 32; index++)
-  {
-
-  extent = mkDirStruct(index,dBlock);
-
-  if( extent->status != 229){  // e5 is 299 in dec 
-
-    int blockCount = 0;
-
-    if(index == 0 ){blockCount++;} // adds block zero. 
-
-    int j = 0;
-
-       for(j = 0; j < 15; j++)
     {
-       
 
+     extent = mkDirStruct(index,block0);
+
+     if( extent->status != 229)// e5 is 299 in dec
+     {   
+
+      int blockCount = 0;
+
+      if(index == 0 ){blockCount++;} // adds block zero. 
+
+      int j = 0;
+
+      for(j = 0; j < 15; j++)
+      {
+       
         if (extent->blocks[j] != 0 )
         {
-            blockCount++;
-           // printf("block: %d is filled\n", block->blocks[j]);
+          blockCount++;
+          // printf("block: %d is filled\n", block->blocks[j]);
         }
     
+      }
+      int size = (blockCount-1)*1024+extent->RC*128+extent->BC;
+      printf("%8s.%3s  size:%4d\n", extent->name, extent->extension,size);
+
+     }
+
     }
-  int size = (blockCount-1)*1024+extent->RC*128+extent->BC;
-  printf("%8s.%3s  size:%4d\n", extent->name, extent->extension,size);
-  }
-
-  }
-
-
 }
 
 
 int  cpmDelete(char * name)
 {
 
+ // read the block 
+ uint8_t block0[BLOCK_SIZE];
+ blockRead(block0,0);
 
-DirStructType *extent;
+ DirStructType *extent;
 
-extent = mkDirStruct(0,dBlock);
+ int index = 0;
+ index = findExtentWithName(name, block0);
 
-int index = 0;
-bool isComplete = false;
-char name_ex[12];
-
-
-while((isComplete == false) && (index < 32)){
-
-name_ex = extent->name;
-strcat(name_ex, extent->extension);
+ if(index > 0)
+ {
+   extent = mkDirStruct(index,block0);
 
 
-if(strcmp(name_ex, name) == 0){
-isComplete = true;
-dBlock[index] = 229; // sets status to e5
-int ex_loop = 0;
- for(ex_loop = 1; ex_loop < 32; ex_loop++)
+   printf("we have a match the index is:%d\n", index);
+   int wipe_block = index*32;
+   int ex_loop = 0;
+
+
+    block0[wipe_block] = 229; // sets status to e5
+
+   // iterates through the 32 byte extent setting values to 0 
+   for(ex_loop = 0; ex_loop < 32; ex_loop++)
     {
-     dBlock[index+ex_loop] = 0;
-        // status
-    }
+
+      if(ex_loop < 16)
+      {
+        if (extent->blocks[ex_loop] != 0)
+        {  // updates free list
+            printf("freeing block  %d\n", extent->blocks[ex_loop]);
+            freelist[extent->blocks[ex_loop]] = true;
+        }
+      }
+
+     if(ex_loop > 0){ block0[wipe_block+ex_loop] = 0; } // prevents setting status to 0
     
-}
+    }
 
+  blockWrite(block0,0); // writes updates to disk array. not to the image.
+  }
 
-else
-{
-     index++;
-     extent = mkDirStruct(index,dBlock);
-}
-}
-return isComplete;
+  else 
+  {
+  return index; // index will have a value less than 0 if there is an error and this will return that.
+  }
 
 }
