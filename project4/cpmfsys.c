@@ -46,21 +46,16 @@ DirStructType *mkDirStruct(int index, uint8_t *e)
             {
                 extent.name[ex_loop-1] = e[index + ex_loop];
             }
-         // printf("ex_loop is %d", ex_loop);
         }
 
         else if(ex_loop <= 11)
         {
-           // if(e[index + ex_loop] == ' ')
-            //{
+           
                 extent.extension[ex_loop-9] = '\0';
-            //}
-          //printf("exloop %d ",ex_loop);
-          //else{
+            
           extent.extension[ex_loop-9] = e[index + ex_loop];
           extent.extension[3] = '\0';
-         // }
-          //printf("index: %d, %c\n", ex_loop-9,directory[index].extension[ex_loop-9]);
+         
 
         }
 
@@ -96,6 +91,115 @@ DirStructType *mkDirStruct(int index, uint8_t *e)
     extent.extension[3] = '\0';
     return extent_ptr;
 }
+
+void writeDirStruct(DirStructType *d, uint8_t index, uint8_t *e)
+{
+
+ //printf("\n\nWriteDirStruct");
+
+ //printf("\n\nname:%s \n\n", d->name);
+
+ index = index * 32; 
+
+int ex_loop = 0;
+
+     for(ex_loop = 0; ex_loop < 32; ex_loop++)
+    {
+        // status
+        if(ex_loop == 0)
+        {
+        e[index] = d->status;
+        }
+
+        // name
+        else if(ex_loop <= 8)
+        {
+            
+              e[index + ex_loop] =  d->name[ex_loop-1]; 
+          
+        }
+
+        else if(ex_loop <= 11)
+        {
+          
+          e[index + ex_loop] = d->extension[ex_loop-9];          
+
+        }
+
+        // note this is out of order the switch should go ^ but it doesnt like not having an if above
+         else if (ex_loop > 15) // builds blocks
+        {
+            e[index + ex_loop] = d->blocks[ex_loop-16]; 
+
+        }
+
+        switch( ex_loop )
+        {
+            case(12):
+               e[index + ex_loop] = d->XL; 
+                break;
+            
+            case(13):
+                 e[index + ex_loop] = d->BC;
+                break;
+
+            case(14):
+               e[index + ex_loop] = d->XH; 
+                break;
+
+            case(15):
+                e[index + ex_loop] = d->RC; 
+                break;
+        }
+       
+    }
+    d->name[8] = '\0';
+    d->extension[3] = '\0';
+          
+}
+
+void testwrite()
+{
+   printf("fault?");
+
+  int index = 0;
+  uint8_t block0[BLOCK_SIZE];
+  blockRead(block0,0);
+  DirStructType *extent = malloc(sizeof(DirStructType));
+
+
+  extent = mkDirStruct(0,block0);
+
+ printf("\n\nname:%s \n\n", extent->name);
+
+
+ /*
+ extent->name[0] = 't';
+ extent->name[1] = 'e';
+ extent->name[2] = 's';
+ extent->name[3] = 't';
+ extent->name[4] = '\0';
+ extent->name[5] = '\0';
+ extent->name[6] = '\0';
+ extent->name[7] = '\0';
+ extent->name[8] = '\0';
+ //extent->name[9] = '\0';
+
+*/
+
+ writeDirStruct(extent, 0, block0);
+
+
+ DirStructType *extent2 = malloc(sizeof(DirStructType));
+
+ extent2 = mkDirStruct(0,block0);
+ printf("\n\nname:%s \n\n", extent2->name);
+
+
+}
+
+
+
 
 // debugg remove before submission
 void print_extent(int index)
@@ -256,7 +360,7 @@ void cpmDir()
     
       }
       int size = (blockCount-1)*1024+extent->RC*128+extent->BC;
-      printf("%8s.%3s  size:%4d\n", extent->name, extent->extension,size);
+      printf("%s.%s %d\n", extent->name, extent->extension,size);
 
      }
 
@@ -264,8 +368,159 @@ void cpmDir()
 }
 
 
+
+int cpmRename(char *oldName, char * newName)
+{
+ //#  cpmRename code explaination
+ //#  
+ //#  The new file name must fall under the following rules
+ //#  name < 9 charectors
+ //#  file extension < 4 charectors 
+ //#  
+ //#  We first check if the file name is legal using checkLegalName function.
+ //#  After we look for the extent containing the old name
+ //#  if none exist we return -1 for invalid file name and do no writing operations
+ //#
+ //#  therefore to make it easier to copy to the block we build and fill
+ //#  variables of that size with with the new names. That way the copy can be 1 to 1
+ //#  To do this we loop through the new name until it reaches the '.' charector
+ //#  we then fill the remaining spaces with \0 to signify unused space.
+ //#
+ //#  we then repeat the process for the extension except we just copy the 3 bytes that
+ //#  the extension is allowed
+ //#
+ //#  We then simply 1 to 1 copy the bytes to the block.
+ //#
+ //# 
+ //#
+
+ // might be best just to copy the new name to the appropriate size char[] then just copy the whole thing over.
+    // need to include bool checkLegalName(char *name); 
+
+
+
+
+  // problems to be fixed instead of filling with \0 maybe just fill with  ' ' and end with \0 
+  // need to check valid file name before building the file name and need to return if not valid
+  char file_name[9];
+  char file_extension[4];
+  int i = 0;
+  bool EOF_name = false;
+  int ex_index = 1; // holds the index of the extentsion
+
+
+
+ uint8_t block0[BLOCK_SIZE];
+ blockRead(block0,0);
+
+ DirStructType *extent;
+
+
+//Error handling
+ int index = 0;
+ int error_code = 0;
+ index = findExtentWithName(oldName, block0);
+ 
+  
+
+
+
+
+
+
+  for (i = 0; i < 9; i++)
+  {
+    if(EOF_name == true)
+    {
+        file_name[i] = '\0';
+    }
+    else if(newName[i] == '.')
+    {
+        file_name[i] = '\0';
+
+        // prevents us from trying to write parts of the extension to the name if the name is short
+        EOF_name = true; 
+        ex_index += i; // adding i because i points to the '.' we want the space after
+    }
+    else if(newName[i] == ' ')
+    {
+        file_name[i] = '\0'; // this could maybe just be space
+    }
+    else
+    {
+        file_name[i] = newName[i];
+    }
+  }
+ 
+  for ( i=0; i <= 3; i++)
+  {
+    if(newName[i+ex_index] == '.')
+    {
+        file_extension[i] = 'f';
+    }
+    else if(newName[i+ex_index] == ' ')
+    {
+        file_extension[i] = ' ';
+    }
+    else
+    {
+        file_extension[i] = newName[ex_index+i];
+    }
+  }
+    
+    printf("File extension:%s ", file_extension);
+    printf(" File name:%s\n", file_name);
+    
+
+ 
+
+ if(index >= 0)
+ {
+   extent = mkDirStruct(index,block0);
+
+
+ //  printf("we have a match the index is:%d\n", index);
+   int write_block = index*32;
+   int ex_loop = 0;
+   bool EOF_name;
+
+
+   // iterates through the 32 byte extent replacing the name
+   for(ex_loop = 1; ex_loop < 9; ex_loop++)
+    {
+       // printf("We are replacing name %c with %c \n", block0[write_block+ex_loop],file_name[ex_loop-1]);
+        block0[write_block+ex_loop] = file_name[ex_loop-1];
+         
+    }
+
+    for(ex_loop = 9; ex_loop < 12; ex_loop++)
+    {
+
+       // printf("We are replacing extentsion %c with %c \n", block0[write_block+ex_loop], file_extension[ex_loop-9] );
+        block0[write_block+ex_loop] = file_extension[ex_loop-9];
+
+    }
+
+
+
+     blockWrite(block0,0); // writes updates to disk array. not to the image.
+    }
+
+  else 
+  {
+  return index; // index will have a value less than 0 if there is an error and this will return that.
+  }
+
+}; 
+
+
+
 int  cpmDelete(char * name)
 {
+
+
+     // need to include bool checkLegalName(char *name); 
+
 
  // read the block 
  uint8_t block0[BLOCK_SIZE];
@@ -281,7 +536,7 @@ int  cpmDelete(char * name)
    extent = mkDirStruct(index,block0);
 
 
-   printf("we have a match the index is:%d\n", index);
+  // printf("we have a match the index is:%d\n", index);
    int wipe_block = index*32;
    int ex_loop = 0;
 
@@ -296,7 +551,7 @@ int  cpmDelete(char * name)
       {
         if (extent->blocks[ex_loop] != 0)
         {  // updates free list
-            printf("freeing block  %d\n", extent->blocks[ex_loop]);
+            //printf("freeing block  %d\n", extent->blocks[ex_loop]);
             freelist[extent->blocks[ex_loop]] = true;
         }
       }
