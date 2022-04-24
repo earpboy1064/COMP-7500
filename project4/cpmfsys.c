@@ -1,27 +1,39 @@
+// cpmfsys.c 
+// By Wyatt LeMaster
+// For COMP 7500
+
 #include "cpmfsys.h" 
 #include "diskSimulator.h"
+#include "string.h"
 
-//hexdump -C image1.img  prints drive
-
-//File length = NB * 1024 + RC *128 + BC
-//assigning values to struct:
-// d->BC = (e + index * EXTENT_SIZE)[13];
-//static uint8_t disk[256][1024]; 
 
 bool freelist[255];
-//uint8_t block0[BLOCK_SIZE];
 
 
 DirStructType *mkDirStruct(int index, uint8_t *e)
 {
+
+  //# COMMENT BLOCK
+  //#  this function allocates and fills the memory for the DirStructType structure
+  //#  this structure holds the 32 byte extent from disk 0
+  //#  It takes an index which shows the location in block0 for the extent
+  //#  it also receieves a pointer e which points to the block0 that is being 
+  //#  translated
+  //#
+  //#  the function iterates through the 32 bytes and assigns the values
+  //#  to the correct locations in the stucture
+  //#  it then returns a pointer which points to the allocated 
+  //#  memory where the structure is held.
+
+
+
+// calculating the index location
  index = index * 32; 
- //uint8_t *dirBlock = e; // reassigning for clarity
 
- 
-
+ //ex loop stands for extent loop. Its used to interate through the extent.
  int ex_loop = 0;
 
- // workaround for simplicity, rather than modify the pointer just have the pointer
+ // done simplicity, rather than modify the pointer just have the pointer
  // point to my variable then return pointer
  DirStructType *extent_ptr = malloc(sizeof(DirStructType));
  DirStructType extent;
@@ -47,12 +59,9 @@ DirStructType *mkDirStruct(int index, uint8_t *e)
                 extent.name[ex_loop-1] = e[index + ex_loop];
             }
         }
-
         else if(ex_loop <= 11)
-        {
-           
-                extent.extension[ex_loop-9] = '\0';
-            
+        {  
+          extent.extension[ex_loop-9] = '\0';
           extent.extension[ex_loop-9] = e[index + ex_loop];
           extent.extension[3] = '\0';
          
@@ -87,21 +96,39 @@ DirStructType *mkDirStruct(int index, uint8_t *e)
        
     }
           
+
+    // adds null terminators for name and extension
+    // this is adding the terminator to the location reserved for it
+    // therefore we shouldnt be worried about overwriting data.
     extent.name[8] = '\0';
     extent.extension[3] = '\0';
+
+    // returns pointer to the location
     return extent_ptr;
 }
 
 void writeDirStruct(DirStructType *d, uint8_t index, uint8_t *e)
 {
+  //# COMMENT BLOCK
+  //# This function is used to write the contents of a modified
+  //# extent to the block where it originated from.
 
+  //# d is a pointer to the modifed extent,
+  //# index is the location in block0 where the extent is stored
+  //# e is a pointer to the block to be altered
+
+  //# The function operates the same as mkDirStruct just reversed
+
+
+
+ // debug print statements 
  //printf("\n\nWriteDirStruct");
 
  //printf("\n\nname:%s \n\n", d->name);
 
  index = index * 32; 
 
-int ex_loop = 0;
+ int ex_loop = 0;
 
      for(ex_loop = 0; ex_loop < 32; ex_loop++)
     {
@@ -126,6 +153,8 @@ int ex_loop = 0;
 
         }
 
+
+ /*  THIS PROB SHOULD BE FIXED BEFORE SUBMISSION
         // note this is out of order the switch should go ^ but it doesnt like not having an if above
          else if (ex_loop > 15) // builds blocks
         {
@@ -150,7 +179,7 @@ int ex_loop = 0;
             case(15):
                 e[index + ex_loop] = d->RC; 
                 break;
-        }
+        }*/
        
     }
     d->name[8] = '\0';
@@ -158,9 +187,10 @@ int ex_loop = 0;
           
 }
 
+// debugg remove before submission
 void testwrite()
 {
-   printf("fault?");
+  printf("fault?");
 
   int index = 0;
   uint8_t block0[BLOCK_SIZE];
@@ -168,7 +198,7 @@ void testwrite()
   DirStructType *extent = malloc(sizeof(DirStructType));
 
 
-  extent = mkDirStruct(0,block0);
+ extent = mkDirStruct(0,block0);
 
  printf("\n\nname:%s \n\n", extent->name);
 
@@ -185,7 +215,7 @@ void testwrite()
  extent->name[8] = '\0';
  //extent->name[9] = '\0';
 
-*/
+ */
 
  writeDirStruct(extent, 0, block0);
 
@@ -224,6 +254,17 @@ void print_extent(int index)
 
 void makeFreeList(){
 
+//#  COMMENT BLOCK
+//#  This function creates a list of block usage in the memory
+//#
+//#  A used block is denoted by *
+//#
+//#  A free block is denoted by a .
+//#
+//#  In order to achieve this we iterate through every extent 
+//#  and look at every block. if the block is greater then 0 we mark it as in use
+
+
   memset(freelist, true, sizeof freelist); // sets array to all true
 
   uint8_t block0[BLOCK_SIZE];
@@ -244,20 +285,25 @@ void makeFreeList(){
     for(j = 0; j < 16; j++)
     {
 
-        if (extent->blocks[j] != 0 ) // had != 0 but free list didnt match
+        if (extent->blocks[j] != 0 ) // checks if the block is empty
         {
             freelist[extent->blocks[j]] = false;
-            //printf("block: %d is filled\n", extent->blocks[j]);
         }
     
     }
-    //printf("\n");
     
   }
 } 
 
-void printFreeList()
- {
+void printFreeList(){
+
+//# This function serves only to print the free list in rows of 16
+//# It simply iterates through all 255 values in the free list and prints
+
+//# . for empty 
+
+//# * for full 
+
  int j = 0;
     for(j = 0; j <= 255; j++)
     {
@@ -286,6 +332,16 @@ void printFreeList()
 int findExtentWithName(char *name, uint8_t *block0)
 {
 
+//#  This function is used to find and return the index 
+//#  of the extent that contains the filename provided.
+//#
+//#  This is done by iterating through every extent and compairing 
+//#  The name.
+//#
+//#  if no match is found -1 is returned
+
+
+
   int index = 0;
   DirStructType *extent;
 
@@ -293,6 +349,9 @@ int findExtentWithName(char *name, uint8_t *block0)
   char file_name[9];
   char file_extension[4];
 
+
+  // we first start by building the name in the same format as the 
+  // name stored in the extent to make for easy compairison
   for (i = 0; i < 9; i++)
   {
     if(name[i] == '.')
@@ -308,27 +367,79 @@ int findExtentWithName(char *name, uint8_t *block0)
         file_name[i] = name[i];
     }
   }
-  //printf("the file name is %s \n", file_name);
+
+  // we then search for an extent that matches
+  // if we find a match it returns the index
   for( index = 0; index < 32; index++)
   {
     extent = mkDirStruct(index,block0);
 
     if(strcmp(extent->name, file_name) == 0)
     {
-     //printf("we have a match in our NEW FUNCION YAY the index is:%d\n", index);
      return index;
     }
   }
 
+  // returned if no filename is found
   return -1; // filename not found
 }
 
 
 
+bool checkLegalName(char *name)
+{
+//# Code block 
+//#  We need to check to ensure that the new name is not longer then 8 char
+//#  and that the extension is not longer then 3
+//#  if they are accepted it needs to return 1 else return -1
+
+
+ // USE BOOL
+ int i = 0;
+ int valid_file = 1;
+ int name_size = 0;
+
+ if (sizeof(name) > 11){ valid_file = -1;}
+
+ printf("name is %s\n", name);
+ printf("size of name %d\n",strlen(name) );
+
+ for(i = 0; i < 8; i++)
+ {
+  if (name[i] == '.')
+  {
+   valid_file = 1;
+   name_size = i;
+  } 
+ }
+
+ if((name_size - i) > 3)
+ {
+   valid_file = -1; 
+ }
+
+  printf("file is %d", valid_file);
+
+ return valid_file;
+}
+
 
 void cpmDir()
  {
-  
+ //# COMMENT BLOCK  
+ //#  This function prints the contents of the directory block 0
+ //#
+ //# it iterates through all 32 extents and prints all information
+ //#  this is made possible by calling mkDirStruct for every of the 32 extents
+ //#  then printing the information contained in the structure.
+ //#
+ //#  It also calculates the size of each file.
+ //#  This is done by the following equation:
+ //# (blockCount-1)*1024+extent->RC*128+extent->BC;
+ 
+
+
+
   int index = 0;
   uint8_t block0[BLOCK_SIZE];
   blockRead(block0,0);
@@ -416,27 +527,31 @@ int cpmRename(char *oldName, char * newName)
  DirStructType *extent;
 
 
-//Error handling
+ //Error handling
  int index = 0;
  int error_code = 0;
  index = findExtentWithName(oldName, block0);
  
-  
+
+ if(index >= 0)
+ {
 
 
+   extent = mkDirStruct(index,block0);
 
 
-
+    //printf("File extension before:%s ", extent->extension);
+    //printf(" File name before:%s\n", extent->name);
 
   for (i = 0; i < 9; i++)
   {
     if(EOF_name == true)
     {
-        file_name[i] = '\0';
+        extent->name[i] = '\0';
     }
     else if(newName[i] == '.')
     {
-        file_name[i] = '\0';
+        extent->name[i] = '\0';
 
         // prevents us from trying to write parts of the extension to the name if the name is short
         EOF_name = true; 
@@ -444,11 +559,11 @@ int cpmRename(char *oldName, char * newName)
     }
     else if(newName[i] == ' ')
     {
-        file_name[i] = '\0'; // this could maybe just be space
+        extent->name[i] = '\0'; // this could maybe just be space
     }
     else
     {
-        file_name[i] = newName[i];
+        extent->name[i] = newName[i];
     }
   }
  
@@ -456,62 +571,27 @@ int cpmRename(char *oldName, char * newName)
   {
     if(newName[i+ex_index] == '.')
     {
-        file_extension[i] = 'f';
+        extent->extension[i] = '\0';
     }
     else if(newName[i+ex_index] == ' ')
     {
-        file_extension[i] = ' ';
+         extent->extension[i] = '\0';
     }
     else
     {
-        file_extension[i] = newName[ex_index+i];
+         extent->extension[i] = newName[ex_index+i];
     }
   }
     
-    printf("File extension:%s ", file_extension);
-    printf(" File name:%s\n", file_name);
+    printf("File extension after:%s ", extent->extension);
+    printf(" File name after:%s\n", extent->name);
     
-
+   writeDirStruct(extent, index, block0);
  
-
- if(index >= 0)
- {
-   extent = mkDirStruct(index,block0);
-
-
- //  printf("we have a match the index is:%d\n", index);
-   int write_block = index*32;
-   int ex_loop = 0;
-   bool EOF_name;
-
-
-   // iterates through the 32 byte extent replacing the name
-   for(ex_loop = 1; ex_loop < 9; ex_loop++)
-    {
-       // printf("We are replacing name %c with %c \n", block0[write_block+ex_loop],file_name[ex_loop-1]);
-        block0[write_block+ex_loop] = file_name[ex_loop-1];
-         
-    }
-
-    for(ex_loop = 9; ex_loop < 12; ex_loop++)
-    {
-
-       // printf("We are replacing extentsion %c with %c \n", block0[write_block+ex_loop], file_extension[ex_loop-9] );
-        block0[write_block+ex_loop] = file_extension[ex_loop-9];
-
-    }
-
-
-
-     blockWrite(block0,0); // writes updates to disk array. not to the image.
-    }
-
-  else 
-  {
-  return index; // index will have a value less than 0 if there is an error and this will return that.
+   blockWrite(block0,0); // writes updates to disk array. not to the image.
+ 
   }
-
-}; 
+}
 
 
 
@@ -520,7 +600,6 @@ int  cpmDelete(char * name)
 
 
      // need to include bool checkLegalName(char *name); 
-
 
  // read the block 
  uint8_t block0[BLOCK_SIZE];

@@ -46,9 +46,12 @@ int main(int argc, char * argv[]) {
   fprintf(stdout,"cpmRename return code = %d,\n",cpmRename("mytestf","mytestv2.x")); 
   cpmDir(); 
 
-  testwrite();
+  //testwrite();
 
 
   printFreeList(); 
+
+
+  checkLegalName("mytestf11.ttxt");
 }
 
