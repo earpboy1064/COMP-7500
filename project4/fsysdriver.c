@@ -52,6 +52,6 @@ int main(int argc, char * argv[]) {
   printFreeList(); 
 
 
-  checkLegalName("mytestf11.ttxt");
+ // printf("\nlegal name: %d\n",checkLegalName("1testf1.▲xt"));
 }
 

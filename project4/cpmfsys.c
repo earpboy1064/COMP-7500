@@ -4,7 +4,8 @@
 
 #include "cpmfsys.h" 
 #include "diskSimulator.h"
-#include "string.h"
+#include "string.h" // for strlen
+#include "ctype.h" // for isalpha and isdigit
 
 
 bool freelist[255];
@@ -393,32 +394,51 @@ bool checkLegalName(char *name)
 //#  and that the extension is not longer then 3
 //#  if they are accepted it needs to return 1 else return -1
 
-
- // USE BOOL
  int i = 0;
- int valid_file = 1;
+ bool valid_file = true;
  int name_size = 0;
 
- if (sizeof(name) > 11){ valid_file = -1;}
+ if (strlen(name) > 12){ valid_file = false;}
 
- printf("name is %s\n", name);
- printf("size of name %d\n",strlen(name) );
+ //printf("name is %s\n", name);
+ //printf("size of name %d\n",strlen(name) );
 
- for(i = 0; i < 8; i++)
+ 
+ if(valid_file == 1)
  {
-  if (name[i] == '.')
+
+   if((isalpha(name[0]) == 0) && (isdigit(name[0]) == 0))
+   {
+   valid_file = false;
+   }
+
+
+   for(i = 0; i < 9; i++)
+   {
+
+   //printf("checking char %c\n", name[i]);
+
+   if ((name[i] == '.') && (valid_file == true))
+   {
+    //valid_file = true;
+    name_size = i+1;
+    //printf("index where . is %d\n", i);
+
+   }  
+ }
+
+ if((strlen(name) - name_size) > 3)
+ {
+   valid_file = false; 
+ }
+
+ if((isalpha(name[strlen(name) - name_size]) == 0) && (isdigit(name[strlen(name) - name_size]) == 0))
   {
-   valid_file = 1;
-   name_size = i;
-  } 
- }
+  valid_file = false;
+  }
 
- if((name_size - i) > 3)
- {
-   valid_file = -1; 
+  //printf("file is %d", valid_file);
  }
-
-  printf("file is %d", valid_file);
 
  return valid_file;
 }
@@ -529,9 +549,20 @@ int cpmRename(char *oldName, char * newName)
 
  //Error handling
  int index = 0;
- int error_code = 0;
+ bool legal_name = true;
  index = findExtentWithName(oldName, block0);
+ legal_name = checkLegalName(newName);
  
+ if(legal_name == false)
+ {
+   return -2;
+ }
+
+ if(index < 0)
+ {
+    return -1;
+ }
+
 
  if(index >= 0)
  {
@@ -583,8 +614,8 @@ int cpmRename(char *oldName, char * newName)
     }
   }
     
-    printf("File extension after:%s ", extent->extension);
-    printf(" File name after:%s\n", extent->name);
+    //printf("File extension after:%s ", extent->extension);
+    //printf(" File name after:%s\n", extent->name);
     
    writeDirStruct(extent, index, block0);
  
@@ -609,6 +640,20 @@ int  cpmDelete(char * name)
 
  int index = 0;
  index = findExtentWithName(name, block0);
+
+
+ legal_name = checkLegalName(newName);
+ 
+ if(legal_name == false)
+ {
+   return -2;
+ }
+
+ if(index < 0)
+ {
+    return -1;
+ }
+
 
  if(index > 0)
  {
