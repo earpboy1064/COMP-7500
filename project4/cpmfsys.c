@@ -1,6 +1,7 @@
 // cpmfsys.c 
 // By Wyatt LeMaster
 // For COMP 7500
+// Final Build
 
 #include "cpmfsys.h" 
 #include "diskSimulator.h"
@@ -8,7 +9,7 @@
 #include "ctype.h" // for isalpha and isdigit
 
 
-bool freelist[255];
+bool freelist[255]; // variable to hold the free list
 
 
 DirStructType *mkDirStruct(int index, uint8_t *e)
@@ -28,7 +29,7 @@ DirStructType *mkDirStruct(int index, uint8_t *e)
 
 
 
-// calculating the index location
+ // calculating the index location
  index = index * 32; 
 
  //ex loop stands for extent loop. Its used to interate through the extent.
@@ -121,12 +122,6 @@ void writeDirStruct(DirStructType *d, uint8_t index, uint8_t *e)
   //# The function operates the same as mkDirStruct just reversed
 
 
-
- // debug print statements 
- //printf("\n\nWriteDirStruct");
-
- //printf("\n\nname:%s \n\n", d->name);
-
  index = index * 32; 
 
  int ex_loop = 0;
@@ -155,12 +150,10 @@ void writeDirStruct(DirStructType *d, uint8_t index, uint8_t *e)
         }
 
 
- /*  THIS PROB SHOULD BE FIXED BEFORE SUBMISSION
         // note this is out of order the switch should go ^ but it doesnt like not having an if above
          else if (ex_loop > 15) // builds blocks
         {
-            e[index + ex_loop] = d->blocks[ex_loop-16]; 
-
+            //e[index + ex_loop] = d->blocks[ex_loop-16]; 
         }
 
         switch( ex_loop )
@@ -180,7 +173,7 @@ void writeDirStruct(DirStructType *d, uint8_t index, uint8_t *e)
             case(15):
                 e[index + ex_loop] = d->RC; 
                 break;
-        }*/
+        }
        
     }
     d->name[8] = '\0';
@@ -188,82 +181,19 @@ void writeDirStruct(DirStructType *d, uint8_t index, uint8_t *e)
           
 }
 
-// debugg remove before submission
-void testwrite()
+
+void makeFreeList()
 {
-  printf("fault?");
 
-  int index = 0;
-  uint8_t block0[BLOCK_SIZE];
-  blockRead(block0,0);
-  DirStructType *extent = malloc(sizeof(DirStructType));
-
-
- extent = mkDirStruct(0,block0);
-
- printf("\n\nname:%s \n\n", extent->name);
-
-
- /*
- extent->name[0] = 't';
- extent->name[1] = 'e';
- extent->name[2] = 's';
- extent->name[3] = 't';
- extent->name[4] = '\0';
- extent->name[5] = '\0';
- extent->name[6] = '\0';
- extent->name[7] = '\0';
- extent->name[8] = '\0';
- //extent->name[9] = '\0';
-
- */
-
- writeDirStruct(extent, 0, block0);
-
-
- DirStructType *extent2 = malloc(sizeof(DirStructType));
-
- extent2 = mkDirStruct(0,block0);
- printf("\n\nname:%s \n\n", extent2->name);
-
-
-}
-
-
-
-
-// debugg remove before submission
-void print_extent(int index)
- {
-  uint8_t block0[BLOCK_SIZE];
-  blockRead(block0,0);
-
-
-  DirStructType *extent;
-
-  extent = mkDirStruct(index,block0);
-  printf("ex:%2d status:%2x name:%8s  ext:%3s ", index+1, extent->status, extent->name, extent->extension);
-  printf("XL:%2x BC:%2x XH:%2x RC:%2x\n", extent->XL,extent->BC,extent->XH,extent->RC);
-  int j = 0;
-  for(j = 0; j < 15; j++)
-  {
-    printf("B%d:%d ",j+1,extent->blocks[j]);
-  }
-  printf("\n\n");
-
-}
-
-void makeFreeList(){
-
-//#  COMMENT BLOCK
-//#  This function creates a list of block usage in the memory
-//#
-//#  A used block is denoted by *
-//#
-//#  A free block is denoted by a .
-//#
-//#  In order to achieve this we iterate through every extent 
-//#  and look at every block. if the block is greater then 0 we mark it as in use
+ //#  COMMENT BLOCK
+ //#  This function creates a list of block usage in the memory
+ //#
+ //#  A used block is denoted by *
+ //#
+ //#  A free block is denoted by a .
+ //#
+ //#  In order to achieve this we iterate through every extent 
+ //#  and look at every block. if the block is greater then 0 we mark it as in use
 
 
   memset(freelist, true, sizeof freelist); // sets array to all true
@@ -296,15 +226,18 @@ void makeFreeList(){
   }
 } 
 
-void printFreeList(){
+void printFreeList()
+{
+ //# COMMENT BLOCK
+ //# This function serves only to print the free list in rows of 16
+ //# It simply iterates through all 255 values in the free list and prints
 
-//# This function serves only to print the free list in rows of 16
-//# It simply iterates through all 255 values in the free list and prints
+ //# . for empty 
 
-//# . for empty 
+ //# * for full 
 
-//# * for full 
 
+ printf("\nFREE BLOCK LIST: (* Means in-use)\n");
  int j = 0;
     for(j = 0; j <= 255; j++)
     {
@@ -332,14 +265,14 @@ void printFreeList(){
 
 int findExtentWithName(char *name, uint8_t *block0)
 {
-
-//#  This function is used to find and return the index 
-//#  of the extent that contains the filename provided.
-//#
-//#  This is done by iterating through every extent and compairing 
-//#  The name.
-//#
-//#  if no match is found -1 is returned
+ //#  COMMENT BLOCK
+ //#  This function is used to find and return the index 
+ //#  of the extent that contains the filename provided.
+ //#
+ //#  This is done by iterating through every extent and compairing 
+ //#  The name.
+ //#
+ //#  if no match is found -1 is returned
 
 
 
@@ -389,10 +322,10 @@ int findExtentWithName(char *name, uint8_t *block0)
 
 bool checkLegalName(char *name)
 {
-//# Code block 
-//#  We need to check to ensure that the new name is not longer then 8 char
-//#  and that the extension is not longer then 3
-//#  if they are accepted it needs to return 1 else return -1
+ //# Code block 
+ //#  We need to check to ensure that the new name is not longer then 8 char
+ //#  and that the extension is not longer then 3
+ //#  if they are accepted it needs to return 1 else return -1
 
  int i = 0;
  bool valid_file = true;
@@ -400,9 +333,7 @@ bool checkLegalName(char *name)
 
  if (strlen(name) > 12){ valid_file = false;}
 
- //printf("name is %s\n", name);
- //printf("size of name %d\n",strlen(name) );
-
+ 
  
  if(valid_file == 1)
  {
@@ -416,13 +347,10 @@ bool checkLegalName(char *name)
    for(i = 0; i < 9; i++)
    {
 
-   //printf("checking char %c\n", name[i]);
 
    if ((name[i] == '.') && (valid_file == true))
    {
-    //valid_file = true;
     name_size = i+1;
-    //printf("index where . is %d\n", i);
 
    }  
  }
@@ -436,8 +364,6 @@ bool checkLegalName(char *name)
   {
   valid_file = false;
   }
-
-  //printf("file is %d", valid_file);
  }
 
  return valid_file;
@@ -445,7 +371,7 @@ bool checkLegalName(char *name)
 
 
 void cpmDir()
- {
+{
  //# COMMENT BLOCK  
  //#  This function prints the contents of the directory block 0
  //#
@@ -458,14 +384,12 @@ void cpmDir()
  //# (blockCount-1)*1024+extent->RC*128+extent->BC;
  
 
-
-
   int index = 0;
   uint8_t block0[BLOCK_SIZE];
   blockRead(block0,0);
   DirStructType *extent;
 
-
+  printf("\nDIRECTORY LISTING\n");
   for( index = 0; index < 32; index++)
     {
 
@@ -483,15 +407,16 @@ void cpmDir()
       for(j = 0; j < 15; j++)
       {
        
-        if (extent->blocks[j] != 0 )
+        if (extent->blocks[j] != 0 ) // counts the non empty blocks
         {
           blockCount++;
-          // printf("block: %d is filled\n", block->blocks[j]);
         }
     
       }
+      // calculates the size of the file
       int size = (blockCount-1)*1024+extent->RC*128+extent->BC;
       printf("%s.%s %d\n", extent->name, extent->extension,size);
+
 
      }
 
@@ -525,14 +450,7 @@ int cpmRename(char *oldName, char * newName)
  //# 
  //#
 
- // might be best just to copy the new name to the appropriate size char[] then just copy the whole thing over.
-    // need to include bool checkLegalName(char *name); 
-
-
-
-
-  // problems to be fixed instead of filling with \0 maybe just fill with  ' ' and end with \0 
-  // need to check valid file name before building the file name and need to return if not valid
+ 
   char file_name[9];
   char file_extension[4];
   int i = 0;
@@ -550,15 +468,16 @@ int cpmRename(char *oldName, char * newName)
  //Error handling
  int index = 0;
  bool legal_name = true;
+
  index = findExtentWithName(oldName, block0);
  legal_name = checkLegalName(newName);
  
- if(legal_name == false)
+ if(legal_name == false) // return name not legal
  {
    return -2;
  }
 
- if(index < 0)
+ if(index < 0) // return name not found
  {
     return -1;
  }
@@ -569,10 +488,6 @@ int cpmRename(char *oldName, char * newName)
 
 
    extent = mkDirStruct(index,block0);
-
-
-    //printf("File extension before:%s ", extent->extension);
-    //printf(" File name before:%s\n", extent->name);
 
   for (i = 0; i < 9; i++)
   {
@@ -613,10 +528,8 @@ int cpmRename(char *oldName, char * newName)
          extent->extension[i] = newName[ex_index+i];
     }
   }
-    
-    //printf("File extension after:%s ", extent->extension);
-    //printf(" File name after:%s\n", extent->name);
-    
+
+
    writeDirStruct(extent, index, block0);
  
    blockWrite(block0,0); // writes updates to disk array. not to the image.
@@ -627,10 +540,13 @@ int cpmRename(char *oldName, char * newName)
 
 
 int  cpmDelete(char * name)
-{
+{ 
+  // CODE BLOCK
+  //  This function searches for an extent containing the file name (name)
+  //  if found the function sets all values in the extent to 0 and the status to e5
+  //  this clears the extent and allows for other values to take its place
 
-
-     // need to include bool checkLegalName(char *name); 
+  //  It also clears the spaces int the free list
 
  // read the block 
  uint8_t block0[BLOCK_SIZE];
@@ -639,10 +555,12 @@ int  cpmDelete(char * name)
  DirStructType *extent;
 
  int index = 0;
+ bool legal_name = true;
+ // find the extent
  index = findExtentWithName(name, block0);
 
-
- legal_name = checkLegalName(newName);
+ // check if name is legal
+ legal_name = checkLegalName(name);
  
  if(legal_name == false)
  {
@@ -654,14 +572,13 @@ int  cpmDelete(char * name)
     return -1;
  }
 
-
+ // if a match is made
  if(index > 0)
  {
    extent = mkDirStruct(index,block0);
 
 
-  // printf("we have a match the index is:%d\n", index);
-   int wipe_block = index*32;
+   int wipe_block = index*32; // calculated the location of the block
    int ex_loop = 0;
 
 
@@ -675,7 +592,6 @@ int  cpmDelete(char * name)
       {
         if (extent->blocks[ex_loop] != 0)
         {  // updates free list
-            //printf("freeing block  %d\n", extent->blocks[ex_loop]);
             freelist[extent->blocks[ex_loop]] = true;
         }
       }

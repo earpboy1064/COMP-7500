@@ -24,34 +24,14 @@ int main(int argc, char * argv[]) {
   uint8_t buffer1[BLOCK_SIZE],buffer2[BLOCK_SIZE]; 
   int i; 
   readImage("image1.img"); 
-/* Testing need to remove below*/
-//printBuffer(buffer1,BLOCK_SIZE);
-  //mkDirStruct();
-  
-  //int j = 0;
-  //for ( j = 0; j < 32; j++)
-// {
- // print_extent(j);
- // }
- 
-/* required functions */
   makeFreeList(); 
-  cpmDir();
+  cpmDir(); 
   printFreeList(); 
-  //print_extent(3);
   cpmDelete("shortf.ps");
-  //print_extent(3);
   cpmDir();
   cpmRename("mytestf1.txt","mytest2.tx");
   fprintf(stdout,"cpmRename return code = %d,\n",cpmRename("mytestf","mytestv2.x")); 
   cpmDir(); 
-
-  //testwrite();
-
-
   printFreeList(); 
-
-
- // printf("\nlegal name: %d\n",checkLegalName("1testf1.▲xt"));
 }
 
